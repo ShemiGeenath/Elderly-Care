@@ -460,15 +460,15 @@ const MyProfilePage = () => {
      MAIN RENDER
      ======================= */
   return (
-    <div className="min-h-screen bg-gray-900">
+     <div className="min-h-screen bg-gray-900">
       <div className="flex">
         <Sidebar user={currentUser} onLogout={handleLogout} />
         
-        <div className="flex-1">
+        <div className="ml-32 flex-1">
           <Navbar user={currentUser} />
 
           {/* Main Content */}
-          <div className="max-w-4xl mx-auto px-4 py-8">
+           <div className="max-w-4xl mx-auto px-4 py-8 bg-gray-900">
             
             {/* Cover Photo Section - UPDATED */}
             <div className="bg-gray-800 rounded-xl overflow-hidden mb-6">

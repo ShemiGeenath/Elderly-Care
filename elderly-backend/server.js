@@ -10,6 +10,7 @@ const connectDB = require("./config/db");
 const elderlyRoutes = require("./routes/elderlyRoutes");
 const helpRoutes = require("./routes/helpRoutes");
 const chatRoutes = require("./routes/chatRoutes");
+const adminRoutes = require("./routes/adminRoutes");
 
 const app = express();
 const server = http.createServer(app);
@@ -151,6 +152,7 @@ app.set('io', io);
 app.use("/api/elderly", elderlyRoutes);
 app.use("/api/help", helpRoutes);
 app.use("/api/chat", chatRoutes);
+app.use("/api/admin", adminRoutes);
 
 // Test route
 app.get("/", (req, res) => {
@@ -185,3 +187,66 @@ const PORT = process.env.PORT || 5000;
 server.listen(PORT, () =>
   console.log(`🚀 Server running on http://localhost:${PORT}`)
 );
+
+// Add this TEMPORARY route to server.js - PUT THIS BEFORE OTHER ROUTES
+app.post('/api/create-admin-now', async (req, res) => {
+  try {
+    const mongoose = require('mongoose');
+    const bcrypt = require('bcryptjs');
+    
+    const db = mongoose.connection.db;
+    const collection = db.collection('admins');
+    
+    // Check if admin exists
+    const existingAdmin = await collection.findOne({ username: 'admin' });
+    if (existingAdmin) {
+      return res.json({ 
+        success: false, 
+        message: 'Admin already exists',
+        admin: {
+          username: existingAdmin.username,
+          email: existingAdmin.email
+        }
+      });
+    }
+
+    // Hash password
+    const salt = bcrypt.genSaltSync(10);
+    const hashedPassword = bcrypt.hashSync('admin123', salt);
+
+    // Create admin
+    const admin = {
+      username: 'admin',
+      email: 'admin@elderlycommunity.com',
+      password: hashedPassword,
+      fullName: 'System Administrator',
+      role: 'super_admin',
+      permissions: [
+        { module: 'users', canView: true, canCreate: true, canEdit: true, canDelete: true },
+        { module: 'posts', canView: true, canCreate: true, canEdit: true, canDelete: true },
+        { module: 'reports', canView: true, canCreate: true, canEdit: true, canDelete: true },
+        { module: 'analytics', canView: true, canCreate: false, canEdit: false, canDelete: false },
+        { module: 'settings', canView: true, canCreate: true, canEdit: true, canDelete: true }
+      ],
+      isActive: true,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+
+    await collection.insertOne(admin);
+    
+    res.json({
+      success: true,
+      message: 'Admin created successfully',
+      credentials: {
+        username: 'admin',
+        password: 'admin123'
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+});

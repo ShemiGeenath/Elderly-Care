@@ -38,9 +38,11 @@ import {
 import axiosInstance from '../api/axiosConfig';
 import Sidebar from '../components/Sidebar';
 import Navbar from '../components/Navbar';
+import { useTheme } from '../context/ThemeContext'; // Import useTheme
 
 const SettingsPage = () => {
   const navigate = useNavigate();
+  const { theme, toggleTheme } = useTheme(); // Use theme context
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -111,12 +113,11 @@ const SettingsPage = () => {
   });
 
   const [preferencesForm, setPreferencesForm] = useState({
-    theme: 'dark',
+    theme: theme, // Use theme from context
     language: 'en',
     fontSize: 'medium',
     reduceAnimations: false,
     highContrast: false,
-    fontSize: 'medium',
     dateFormat: 'MM/DD/YYYY',
     timeFormat: '12h',
     showEmoji: true,
@@ -144,6 +145,14 @@ const SettingsPage = () => {
       navigate('/login');
     }
   }, [navigate]);
+
+  // Update preferencesForm when theme changes from context
+  useEffect(() => {
+    setPreferencesForm(prev => ({
+      ...prev,
+      theme: theme
+    }));
+  }, [theme]);
 
   const fetchUserSettings = async (userId) => {
     try {
@@ -176,7 +185,12 @@ const SettingsPage = () => {
         setPrivacyForm(savedSettings.privacy || privacyForm);
         setNotificationForm(savedSettings.notifications || notificationForm);
         setSecurityForm(savedSettings.security || securityForm);
-        setPreferencesForm(savedSettings.preferences || preferencesForm);
+        
+        // Update preferences with saved theme or current theme
+        setPreferencesForm({
+          ...(savedSettings.preferences || preferencesForm),
+          theme: theme // Always use current theme from context
+        });
       }
     } catch (err) {
       console.error('Error fetching user settings:', err);
@@ -219,13 +233,6 @@ const SettingsPage = () => {
           localStorage.setItem('elderlyUser', JSON.stringify(updatedUser));
           setCurrentUser(updatedUser);
         }
-      }
-
-      // Apply theme preference
-      if (preferencesForm.theme === 'dark') {
-        document.documentElement.classList.add('dark');
-      } else {
-        document.documentElement.classList.remove('dark');
       }
 
       setSuccessMessage('Settings saved successfully!');
@@ -272,6 +279,19 @@ const SettingsPage = () => {
     });
   };
 
+  const handleThemeChange = (selectedTheme) => {
+    // Update preferences form
+    setPreferencesForm(prev => ({
+      ...prev,
+      theme: selectedTheme
+    }));
+    
+    // Toggle theme in context if different
+    if (selectedTheme !== theme) {
+      toggleTheme();
+    }
+  };
+
   const handleLogout = () => {
     localStorage.clear();
     navigate('/login');
@@ -308,18 +328,20 @@ const SettingsPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900">
-      <div className="flex h-screen">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
+      <div className="flex">
+        {/* Fixed Sidebar */}
         <Sidebar user={currentUser} onLogout={handleLogout} />
         
-        <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Main Content with left margin for fixed sidebar */}
+        <div className="ml-32 flex-1 flex flex-col min-h-screen">
           <Navbar user={currentUser} />
           
-          <div className="flex-1 overflow-y-auto bg-gray-100 p-6">
+          <div className="flex-1 overflow-y-auto bg-gray-100 dark:bg-gray-900 p-6 transition-colors duration-300">
             <div className="max-w-6xl mx-auto">
               {/* Header */}
               <div className="mb-6 flex items-center justify-between">
-                <h1 className="text-3xl font-bold text-gray-900">Settings</h1>
+                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Settings</h1>
                 <button
                   onClick={saveAllSettings}
                   disabled={saving}
@@ -341,30 +363,30 @@ const SettingsPage = () => {
 
               {/* Success/Error Messages */}
               {successMessage && (
-                <div className="mb-4 p-4 bg-green-100 text-green-700 rounded-lg flex items-center">
+                <div className="mb-4 p-4 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-lg flex items-center">
                   <Check className="h-5 w-5 mr-2" />
                   {successMessage}
                 </div>
               )}
               
               {errorMessage && (
-                <div className="mb-4 p-4 bg-red-100 text-red-700 rounded-lg flex items-center">
+                <div className="mb-4 p-4 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-lg flex items-center">
                   <AlertTriangle className="h-5 w-5 mr-2" />
                   {errorMessage}
                 </div>
               )}
 
               {/* Settings Tabs */}
-              <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-                <div className="flex border-b border-gray-200 overflow-x-auto">
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden transition-colors duration-300">
+                <div className="flex border-b border-gray-200 dark:border-gray-700 overflow-x-auto">
                   {tabs.map(tab => (
                     <button
                       key={tab.id}
                       onClick={() => setActiveTab(tab.id)}
                       className={`flex items-center px-6 py-4 text-sm font-medium border-b-2 transition-colors ${
                         activeTab === tab.id
-                          ? 'border-cyan-500 text-cyan-600'
-                          : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                          ? 'border-cyan-500 text-cyan-600 dark:text-cyan-400'
+                          : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
                       }`}
                     >
                       <tab.icon className="h-5 w-5 mr-2" />
@@ -389,77 +411,77 @@ const SettingsPage = () => {
                           </button>
                         </div>
                         <div>
-                          <h2 className="text-2xl font-bold text-gray-900">
+                          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
                             {profileForm.firstName} {profileForm.lastName}
                           </h2>
-                          <p className="text-gray-500">{profileForm.email}</p>
+                          <p className="text-gray-500 dark:text-gray-400">{profileForm.email}</p>
                         </div>
                       </div>
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                             First Name
                           </label>
                           <input
                             type="text"
                             value={profileForm.firstName}
                             onChange={(e) => setProfileForm({...profileForm, firstName: e.target.value})}
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                             Last Name
                           </label>
                           <input
                             type="text"
                             value={profileForm.lastName}
                             onChange={(e) => setProfileForm({...profileForm, lastName: e.target.value})}
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                             Email
                           </label>
                           <input
                             type="email"
                             value={profileForm.email}
                             onChange={(e) => setProfileForm({...profileForm, email: e.target.value})}
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                             Phone
                           </label>
                           <input
                             type="tel"
                             value={profileForm.phone}
                             onChange={(e) => setProfileForm({...profileForm, phone: e.target.value})}
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                             Birth Date
                           </label>
                           <input
                             type="date"
                             value={profileForm.birthDate}
                             onChange={(e) => setProfileForm({...profileForm, birthDate: e.target.value})}
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                             Mobility Status
                           </label>
                           <select
                             value={profileForm.mobility}
                             onChange={(e) => setProfileForm({...profileForm, mobility: e.target.value})}
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
                           >
                             <option value="independent">Independent</option>
                             <option value="limited">Limited Mobility</option>
@@ -470,80 +492,80 @@ const SettingsPage = () => {
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                           Address
                         </label>
                         <input
                           type="text"
                           value={profileForm.address}
                           onChange={(e) => setProfileForm({...profileForm, address: e.target.value})}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
                         />
                       </div>
 
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                             City
                           </label>
                           <input
                             type="text"
                             value={profileForm.city}
                             onChange={(e) => setProfileForm({...profileForm, city: e.target.value})}
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                             State
                           </label>
                           <input
                             type="text"
                             value={profileForm.state}
                             onChange={(e) => setProfileForm({...profileForm, state: e.target.value})}
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                             Zip Code
                           </label>
                           <input
                             type="text"
                             value={profileForm.zipCode}
                             onChange={(e) => setProfileForm({...profileForm, zipCode: e.target.value})}
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
                           />
                         </div>
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                           Bio
                         </label>
                         <textarea
                           value={profileForm.bio}
                           onChange={(e) => setProfileForm({...profileForm, bio: e.target.value})}
                           rows="4"
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
                           placeholder="Tell us a little about yourself..."
                         />
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                           Hobbies & Interests
                         </label>
                         <div className="flex flex-wrap gap-2 mb-2">
                           {profileForm.hobbies.map((hobby, index) => (
                             <span
                               key={index}
-                              className="px-3 py-1 bg-cyan-100 text-cyan-700 rounded-full text-sm flex items-center"
+                              className="px-3 py-1 bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-400 rounded-full text-sm flex items-center"
                             >
                               {hobby}
                               <button
                                 onClick={() => handleRemoveHobby(hobby)}
-                                className="ml-2 text-cyan-700 hover:text-cyan-900"
+                                className="ml-2 text-cyan-700 dark:text-cyan-400 hover:text-cyan-900 dark:hover:text-cyan-300"
                               >
                                 <X className="h-3 w-3" />
                               </button>
@@ -556,7 +578,7 @@ const SettingsPage = () => {
                             value={hobbyInput}
                             onChange={(e) => setHobbyInput(e.target.value)}
                             onKeyPress={(e) => e.key === 'Enter' && handleAddHobby()}
-                            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                            className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
                             placeholder="Add a hobby..."
                           />
                           <button
@@ -569,19 +591,19 @@ const SettingsPage = () => {
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                           Help Needed
                         </label>
                         <div className="flex flex-wrap gap-2 mb-2">
                           {profileForm.helpNeeded.map((help, index) => (
                             <span
                               key={index}
-                              className="px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-sm flex items-center"
+                              className="px-3 py-1 bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 rounded-full text-sm flex items-center"
                             >
                               {help}
                               <button
                                 onClick={() => handleRemoveHelp(help)}
-                                className="ml-2 text-orange-700 hover:text-orange-900"
+                                className="ml-2 text-orange-700 dark:text-orange-400 hover:text-orange-900 dark:hover:text-orange-300"
                               >
                                 <X className="h-3 w-3" />
                               </button>
@@ -594,7 +616,7 @@ const SettingsPage = () => {
                             value={helpInput}
                             onChange={(e) => setHelpInput(e.target.value)}
                             onKeyPress={(e) => e.key === 'Enter' && handleAddHelp()}
-                            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                            className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
                             placeholder="What help do you need?"
                           />
                           <button
@@ -608,25 +630,25 @@ const SettingsPage = () => {
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                             Emergency Contact Name
                           </label>
                           <input
                             type="text"
                             value={profileForm.emergencyContact}
                             onChange={(e) => setProfileForm({...profileForm, emergencyContact: e.target.value})}
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                             Emergency Contact Phone
                           </label>
                           <input
                             type="tel"
                             value={profileForm.emergencyPhone}
                             onChange={(e) => setProfileForm({...profileForm, emergencyPhone: e.target.value})}
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
                           />
                         </div>
                       </div>
@@ -637,16 +659,16 @@ const SettingsPage = () => {
                   {activeTab === 'privacy' && (
                     <div className="space-y-6">
                       <div>
-                        <h3 className="text-lg font-medium text-gray-900 mb-4">Profile Visibility</h3>
+                        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Profile Visibility</h3>
                         <div className="space-y-4">
                           <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                               Profile Visibility
                             </label>
                             <select
                               value={privacyForm.profileVisibility}
                               onChange={(e) => setPrivacyForm({...privacyForm, profileVisibility: e.target.value})}
-                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
                             >
                               <option value="public">Public - Everyone can see</option>
                               <option value="friends">Friends Only</option>
@@ -655,13 +677,13 @@ const SettingsPage = () => {
                           </div>
 
                           <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                               Email Visibility
                             </label>
                             <select
                               value={privacyForm.showEmail}
                               onChange={(e) => setPrivacyForm({...privacyForm, showEmail: e.target.value})}
-                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
                             >
                               <option value="public">Public</option>
                               <option value="friends">Friends Only</option>
@@ -670,13 +692,13 @@ const SettingsPage = () => {
                           </div>
 
                           <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                               Phone Visibility
                             </label>
                             <select
                               value={privacyForm.showPhone}
                               onChange={(e) => setPrivacyForm({...privacyForm, showPhone: e.target.value})}
-                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
                             >
                               <option value="public">Public</option>
                               <option value="friends">Friends Only</option>
@@ -685,13 +707,13 @@ const SettingsPage = () => {
                           </div>
 
                           <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                               Location Visibility
                             </label>
                             <select
                               value={privacyForm.showLocation}
                               onChange={(e) => setPrivacyForm({...privacyForm, showLocation: e.target.value})}
-                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
                             >
                               <option value="public">Public</option>
                               <option value="friends">Friends Only</option>
@@ -700,13 +722,13 @@ const SettingsPage = () => {
                           </div>
 
                           <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                               Birthday Visibility
                             </label>
                             <select
                               value={privacyForm.showBirthday}
                               onChange={(e) => setPrivacyForm({...privacyForm, showBirthday: e.target.value})}
-                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
                             >
                               <option value="public">Public</option>
                               <option value="friends">Friends Only</option>
@@ -715,13 +737,13 @@ const SettingsPage = () => {
                           </div>
 
                           <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                               Hobbies & Interests Visibility
                             </label>
                             <select
                               value={privacyForm.showHobbies}
                               onChange={(e) => setPrivacyForm({...privacyForm, showHobbies: e.target.value})}
-                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
                             >
                               <option value="public">Public</option>
                               <option value="friends">Friends Only</option>
@@ -732,14 +754,14 @@ const SettingsPage = () => {
                       </div>
 
                       <div>
-                        <h3 className="text-lg font-medium text-gray-900 mb-4">Interaction Settings</h3>
+                        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Interaction Settings</h3>
                         <div className="space-y-3">
                           <label className="flex items-center justify-between">
-                            <span className="text-gray-700">Allow Friend Requests</span>
+                            <span className="text-gray-700 dark:text-gray-300">Allow Friend Requests</span>
                             <button
                               onClick={() => setPrivacyForm({...privacyForm, allowFriendRequests: !privacyForm.allowFriendRequests})}
                               className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                                privacyForm.allowFriendRequests ? 'bg-cyan-500' : 'bg-gray-300'
+                                privacyForm.allowFriendRequests ? 'bg-cyan-500' : 'bg-gray-300 dark:bg-gray-600'
                               }`}
                             >
                               <span
@@ -751,13 +773,13 @@ const SettingsPage = () => {
                           </label>
 
                           <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                               Who can message you
                             </label>
                             <select
                               value={privacyForm.allowMessages}
                               onChange={(e) => setPrivacyForm({...privacyForm, allowMessages: e.target.value})}
-                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
                             >
                               <option value="everyone">Everyone</option>
                               <option value="friends">Friends Only</option>
@@ -766,11 +788,11 @@ const SettingsPage = () => {
                           </div>
 
                           <label className="flex items-center justify-between">
-                            <span className="text-gray-700">Allow others to tag you</span>
+                            <span className="text-gray-700 dark:text-gray-300">Allow others to tag you</span>
                             <button
                               onClick={() => setPrivacyForm({...privacyForm, allowTags: !privacyForm.allowTags})}
                               className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                                privacyForm.allowTags ? 'bg-cyan-500' : 'bg-gray-300'
+                                privacyForm.allowTags ? 'bg-cyan-500' : 'bg-gray-300 dark:bg-gray-600'
                               }`}
                             >
                               <span
@@ -782,11 +804,11 @@ const SettingsPage = () => {
                           </label>
 
                           <label className="flex items-center justify-between">
-                            <span className="text-gray-700">Allow comments on your posts</span>
+                            <span className="text-gray-700 dark:text-gray-300">Allow comments on your posts</span>
                             <button
                               onClick={() => setPrivacyForm({...privacyForm, allowComments: !privacyForm.allowComments})}
                               className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                                privacyForm.allowComments ? 'bg-cyan-500' : 'bg-gray-300'
+                                privacyForm.allowComments ? 'bg-cyan-500' : 'bg-gray-300 dark:bg-gray-600'
                               }`}
                             >
                               <span
@@ -798,11 +820,11 @@ const SettingsPage = () => {
                           </label>
 
                           <label className="flex items-center justify-between">
-                            <span className="text-gray-700">Show online status</span>
+                            <span className="text-gray-700 dark:text-gray-300">Show online status</span>
                             <button
                               onClick={() => setPrivacyForm({...privacyForm, showOnlineStatus: !privacyForm.showOnlineStatus})}
                               className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                                privacyForm.showOnlineStatus ? 'bg-cyan-500' : 'bg-gray-300'
+                                privacyForm.showOnlineStatus ? 'bg-cyan-500' : 'bg-gray-300 dark:bg-gray-600'
                               }`}
                             >
                               <span
@@ -814,11 +836,11 @@ const SettingsPage = () => {
                           </label>
 
                           <label className="flex items-center justify-between">
-                            <span className="text-gray-700">Show last seen</span>
+                            <span className="text-gray-700 dark:text-gray-300">Show last seen</span>
                             <button
                               onClick={() => setPrivacyForm({...privacyForm, showLastSeen: !privacyForm.showLastSeen})}
                               className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                                privacyForm.showLastSeen ? 'bg-cyan-500' : 'bg-gray-300'
+                                privacyForm.showLastSeen ? 'bg-cyan-500' : 'bg-gray-300 dark:bg-gray-600'
                               }`}
                             >
                               <span
@@ -837,14 +859,14 @@ const SettingsPage = () => {
                   {activeTab === 'notifications' && (
                     <div className="space-y-6">
                       <div>
-                        <h3 className="text-lg font-medium text-gray-900 mb-4">Notification Methods</h3>
+                        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Notification Methods</h3>
                         <div className="space-y-3">
                           <label className="flex items-center justify-between">
-                            <span className="text-gray-700">Email Notifications</span>
+                            <span className="text-gray-700 dark:text-gray-300">Email Notifications</span>
                             <button
                               onClick={() => setNotificationForm({...notificationForm, emailNotifications: !notificationForm.emailNotifications})}
                               className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                                notificationForm.emailNotifications ? 'bg-cyan-500' : 'bg-gray-300'
+                                notificationForm.emailNotifications ? 'bg-cyan-500' : 'bg-gray-300 dark:bg-gray-600'
                               }`}
                             >
                               <span
@@ -856,11 +878,11 @@ const SettingsPage = () => {
                           </label>
 
                           <label className="flex items-center justify-between">
-                            <span className="text-gray-700">Push Notifications</span>
+                            <span className="text-gray-700 dark:text-gray-300">Push Notifications</span>
                             <button
                               onClick={() => setNotificationForm({...notificationForm, pushNotifications: !notificationForm.pushNotifications})}
                               className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                                notificationForm.pushNotifications ? 'bg-cyan-500' : 'bg-gray-300'
+                                notificationForm.pushNotifications ? 'bg-cyan-500' : 'bg-gray-300 dark:bg-gray-600'
                               }`}
                             >
                               <span
@@ -872,11 +894,11 @@ const SettingsPage = () => {
                           </label>
 
                           <label className="flex items-center justify-between">
-                            <span className="text-gray-700">SMS Notifications</span>
+                            <span className="text-gray-700 dark:text-gray-300">SMS Notifications</span>
                             <button
                               onClick={() => setNotificationForm({...notificationForm, smsNotifications: !notificationForm.smsNotifications})}
                               className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                                notificationForm.smsNotifications ? 'bg-cyan-500' : 'bg-gray-300'
+                                notificationForm.smsNotifications ? 'bg-cyan-500' : 'bg-gray-300 dark:bg-gray-600'
                               }`}
                             >
                               <span
@@ -890,14 +912,14 @@ const SettingsPage = () => {
                       </div>
 
                       <div>
-                        <h3 className="text-lg font-medium text-gray-900 mb-4">What to Notify</h3>
+                        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">What to Notify</h3>
                         <div className="space-y-3">
                           <label className="flex items-center justify-between">
-                            <span className="text-gray-700">Friend Requests</span>
+                            <span className="text-gray-700 dark:text-gray-300">Friend Requests</span>
                             <button
                               onClick={() => setNotificationForm({...notificationForm, friendRequests: !notificationForm.friendRequests})}
                               className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                                notificationForm.friendRequests ? 'bg-cyan-500' : 'bg-gray-300'
+                                notificationForm.friendRequests ? 'bg-cyan-500' : 'bg-gray-300 dark:bg-gray-600'
                               }`}
                             >
                               <span
@@ -909,11 +931,11 @@ const SettingsPage = () => {
                           </label>
 
                           <label className="flex items-center justify-between">
-                            <span className="text-gray-700">Messages</span>
+                            <span className="text-gray-700 dark:text-gray-300">Messages</span>
                             <button
                               onClick={() => setNotificationForm({...notificationForm, messages: !notificationForm.messages})}
                               className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                                notificationForm.messages ? 'bg-cyan-500' : 'bg-gray-300'
+                                notificationForm.messages ? 'bg-cyan-500' : 'bg-gray-300 dark:bg-gray-600'
                               }`}
                             >
                               <span
@@ -925,11 +947,11 @@ const SettingsPage = () => {
                           </label>
 
                           <label className="flex items-center justify-between">
-                            <span className="text-gray-700">Post Likes</span>
+                            <span className="text-gray-700 dark:text-gray-300">Post Likes</span>
                             <button
                               onClick={() => setNotificationForm({...notificationForm, postLikes: !notificationForm.postLikes})}
                               className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                                notificationForm.postLikes ? 'bg-cyan-500' : 'bg-gray-300'
+                                notificationForm.postLikes ? 'bg-cyan-500' : 'bg-gray-300 dark:bg-gray-600'
                               }`}
                             >
                               <span
@@ -941,11 +963,11 @@ const SettingsPage = () => {
                           </label>
 
                           <label className="flex items-center justify-between">
-                            <span className="text-gray-700">Post Comments</span>
+                            <span className="text-gray-700 dark:text-gray-300">Post Comments</span>
                             <button
                               onClick={() => setNotificationForm({...notificationForm, postComments: !notificationForm.postComments})}
                               className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                                notificationForm.postComments ? 'bg-cyan-500' : 'bg-gray-300'
+                                notificationForm.postComments ? 'bg-cyan-500' : 'bg-gray-300 dark:bg-gray-600'
                               }`}
                             >
                               <span
@@ -957,11 +979,11 @@ const SettingsPage = () => {
                           </label>
 
                           <label className="flex items-center justify-between">
-                            <span className="text-gray-700">Help Requests</span>
+                            <span className="text-gray-700 dark:text-gray-300">Help Requests</span>
                             <button
                               onClick={() => setNotificationForm({...notificationForm, helpRequests: !notificationForm.helpRequests})}
                               className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                                notificationForm.helpRequests ? 'bg-cyan-500' : 'bg-gray-300'
+                                notificationForm.helpRequests ? 'bg-cyan-500' : 'bg-gray-300 dark:bg-gray-600'
                               }`}
                             >
                               <span
@@ -973,11 +995,11 @@ const SettingsPage = () => {
                           </label>
 
                           <label className="flex items-center justify-between">
-                            <span className="text-gray-700">Item Exchange Updates</span>
+                            <span className="text-gray-700 dark:text-gray-300">Item Exchange Updates</span>
                             <button
                               onClick={() => setNotificationForm({...notificationForm, itemExchange: !notificationForm.itemExchange})}
                               className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                                notificationForm.itemExchange ? 'bg-cyan-500' : 'bg-gray-300'
+                                notificationForm.itemExchange ? 'bg-cyan-500' : 'bg-gray-300 dark:bg-gray-600'
                               }`}
                             >
                               <span
@@ -989,11 +1011,11 @@ const SettingsPage = () => {
                           </label>
 
                           <label className="flex items-center justify-between">
-                            <span className="text-gray-700">Mentions</span>
+                            <span className="text-gray-700 dark:text-gray-300">Mentions</span>
                             <button
                               onClick={() => setNotificationForm({...notificationForm, mentionNotifications: !notificationForm.mentionNotifications})}
                               className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                                notificationForm.mentionNotifications ? 'bg-cyan-500' : 'bg-gray-300'
+                                notificationForm.mentionNotifications ? 'bg-cyan-500' : 'bg-gray-300 dark:bg-gray-600'
                               }`}
                             >
                               <span
@@ -1007,14 +1029,14 @@ const SettingsPage = () => {
                       </div>
 
                       <div>
-                        <h3 className="text-lg font-medium text-gray-900 mb-4">Notification Preferences</h3>
+                        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Notification Preferences</h3>
                         <div className="space-y-3">
                           <label className="flex items-center justify-between">
-                            <span className="text-gray-700">Notification Sound</span>
+                            <span className="text-gray-700 dark:text-gray-300">Notification Sound</span>
                             <button
                               onClick={() => setNotificationForm({...notificationForm, notificationSound: !notificationForm.notificationSound})}
                               className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                                notificationForm.notificationSound ? 'bg-cyan-500' : 'bg-gray-300'
+                                notificationForm.notificationSound ? 'bg-cyan-500' : 'bg-gray-300 dark:bg-gray-600'
                               }`}
                             >
                               <span
@@ -1026,11 +1048,11 @@ const SettingsPage = () => {
                           </label>
 
                           <label className="flex items-center justify-between">
-                            <span className="text-gray-700">Vibrate</span>
+                            <span className="text-gray-700 dark:text-gray-300">Vibrate</span>
                             <button
                               onClick={() => setNotificationForm({...notificationForm, notificationVibrate: !notificationForm.notificationVibrate})}
                               className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                                notificationForm.notificationVibrate ? 'bg-cyan-500' : 'bg-gray-300'
+                                notificationForm.notificationVibrate ? 'bg-cyan-500' : 'bg-gray-300 dark:bg-gray-600'
                               }`}
                             >
                               <span
@@ -1042,11 +1064,11 @@ const SettingsPage = () => {
                           </label>
 
                           <label className="flex items-center justify-between">
-                            <span className="text-gray-700">Daily Digest</span>
+                            <span className="text-gray-700 dark:text-gray-300">Daily Digest</span>
                             <button
                               onClick={() => setNotificationForm({...notificationForm, dailyDigest: !notificationForm.dailyDigest})}
                               className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                                notificationForm.dailyDigest ? 'bg-cyan-500' : 'bg-gray-300'
+                                notificationForm.dailyDigest ? 'bg-cyan-500' : 'bg-gray-300 dark:bg-gray-600'
                               }`}
                             >
                               <span
@@ -1058,11 +1080,11 @@ const SettingsPage = () => {
                           </label>
 
                           <label className="flex items-center justify-between">
-                            <span className="text-gray-700">Weekly Digest</span>
+                            <span className="text-gray-700 dark:text-gray-300">Weekly Digest</span>
                             <button
                               onClick={() => setNotificationForm({...notificationForm, weeklyDigest: !notificationForm.weeklyDigest})}
                               className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                                notificationForm.weeklyDigest ? 'bg-cyan-500' : 'bg-gray-300'
+                                notificationForm.weeklyDigest ? 'bg-cyan-500' : 'bg-gray-300 dark:bg-gray-600'
                               }`}
                             >
                               <span
@@ -1074,11 +1096,11 @@ const SettingsPage = () => {
                           </label>
 
                           <label className="flex items-center justify-between">
-                            <span className="text-gray-700">Quiet Hours</span>
+                            <span className="text-gray-700 dark:text-gray-300">Quiet Hours</span>
                             <button
                               onClick={() => setNotificationForm({...notificationForm, quietHours: !notificationForm.quietHours})}
                               className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                                notificationForm.quietHours ? 'bg-cyan-500' : 'bg-gray-300'
+                                notificationForm.quietHours ? 'bg-cyan-500' : 'bg-gray-300 dark:bg-gray-600'
                               }`}
                             >
                               <span
@@ -1092,21 +1114,21 @@ const SettingsPage = () => {
                           {notificationForm.quietHours && (
                             <div className="grid grid-cols-2 gap-4 mt-2">
                               <div>
-                                <label className="block text-sm text-gray-600 mb-1">Start Time</label>
+                                <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">Start Time</label>
                                 <input
                                   type="time"
                                   value={notificationForm.quietHoursStart}
                                   onChange={(e) => setNotificationForm({...notificationForm, quietHoursStart: e.target.value})}
-                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg"
                                 />
                               </div>
                               <div>
-                                <label className="block text-sm text-gray-600 mb-1">End Time</label>
+                                <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">End Time</label>
                                 <input
                                   type="time"
                                   value={notificationForm.quietHoursEnd}
                                   onChange={(e) => setNotificationForm({...notificationForm, quietHoursEnd: e.target.value})}
-                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg"
                                 />
                               </div>
                             </div>
@@ -1120,19 +1142,19 @@ const SettingsPage = () => {
                   {activeTab === 'security' && (
                     <div className="space-y-6">
                       <div>
-                        <h3 className="text-lg font-medium text-gray-900 mb-4">Password & Authentication</h3>
-                        <button className="flex items-center text-cyan-600 hover:text-cyan-700 mb-4">
+                        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Password & Authentication</h3>
+                        <button className="flex items-center text-cyan-600 dark:text-cyan-400 hover:text-cyan-700 dark:hover:text-cyan-300 mb-4">
                           <Key className="h-5 w-5 mr-2" />
                           Change Password
                         </button>
 
                         <div className="space-y-3">
                           <label className="flex items-center justify-between">
-                            <span className="text-gray-700">Two-Factor Authentication</span>
+                            <span className="text-gray-700 dark:text-gray-300">Two-Factor Authentication</span>
                             <button
                               onClick={() => setSecurityForm({...securityForm, twoFactorAuth: !securityForm.twoFactorAuth})}
                               className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                                securityForm.twoFactorAuth ? 'bg-cyan-500' : 'bg-gray-300'
+                                securityForm.twoFactorAuth ? 'bg-cyan-500' : 'bg-gray-300 dark:bg-gray-600'
                               }`}
                             >
                               <span
@@ -1144,11 +1166,11 @@ const SettingsPage = () => {
                           </label>
 
                           <label className="flex items-center justify-between">
-                            <span className="text-gray-700">Login Alerts</span>
+                            <span className="text-gray-700 dark:text-gray-300">Login Alerts</span>
                             <button
                               onClick={() => setSecurityForm({...securityForm, loginAlerts: !securityForm.loginAlerts})}
                               className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                                securityForm.loginAlerts ? 'bg-cyan-500' : 'bg-gray-300'
+                                securityForm.loginAlerts ? 'bg-cyan-500' : 'bg-gray-300 dark:bg-gray-600'
                               }`}
                             >
                               <span
@@ -1162,16 +1184,16 @@ const SettingsPage = () => {
                       </div>
 
                       <div>
-                        <h3 className="text-lg font-medium text-gray-900 mb-4">Session Management</h3>
+                        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Session Management</h3>
                         <div className="space-y-4">
                           <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                               Session Timeout (minutes)
                             </label>
                             <select
                               value={securityForm.sessionTimeout}
                               onChange={(e) => setSecurityForm({...securityForm, sessionTimeout: e.target.value})}
-                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
                             >
                               <option value="15">15 minutes</option>
                               <option value="30">30 minutes</option>
@@ -1181,23 +1203,23 @@ const SettingsPage = () => {
                             </select>
                           </div>
 
-                          <div className="bg-gray-50 p-4 rounded-lg">
-                            <h4 className="font-medium text-gray-900 mb-3">Active Sessions</h4>
+                          <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
+                            <h4 className="font-medium text-gray-900 dark:text-white mb-3">Active Sessions</h4>
                             <div className="space-y-3">
                               <div className="flex items-center justify-between">
                                 <div className="flex items-center">
-                                  <Smartphone className="h-5 w-5 text-gray-400 mr-3" />
+                                  <Smartphone className="h-5 w-5 text-gray-400 dark:text-gray-500 mr-3" />
                                   <div>
-                                    <p className="text-sm font-medium text-gray-900">Current Session</p>
-                                    <p className="text-xs text-gray-500">Chrome on Windows • Now</p>
+                                    <p className="text-sm font-medium text-gray-900 dark:text-white">Current Session</p>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400">Chrome on Windows • Now</p>
                                   </div>
                                 </div>
-                                <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
+                                <span className="text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-2 py-1 rounded-full">
                                   Current
                                 </span>
                               </div>
                             </div>
-                            <button className="mt-3 text-sm text-red-600 hover:text-red-700">
+                            <button className="mt-3 text-sm text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300">
                               Sign out all other sessions
                             </button>
                           </div>
@@ -1206,55 +1228,62 @@ const SettingsPage = () => {
                     </div>
                   )}
 
-                  {/* Preferences Settings */}
+                  {/* Preferences Settings - UPDATED with proper theme toggle */}
                   {activeTab === 'preferences' && (
                     <div className="space-y-6">
                       <div>
-                        <h3 className="text-lg font-medium text-gray-900 mb-4">Appearance</h3>
+                        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Appearance</h3>
                         <div className="space-y-4">
                           <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                               Theme
                             </label>
-                            <div className="grid grid-cols-3 gap-3">
+                            <div className="grid grid-cols-2 gap-3">
                               <button
-                                onClick={() => setPreferencesForm({...preferencesForm, theme: 'light'})}
-                                className={`p-3 border rounded-lg flex flex-col items-center ${
-                                  preferencesForm.theme === 'light' ? 'border-cyan-500 bg-cyan-50' : 'border-gray-200'
+                                onClick={() => handleThemeChange('light')}
+                                className={`p-3 border rounded-lg flex flex-col items-center transition-all ${
+                                  theme === 'light' 
+                                    ? 'border-cyan-500 bg-cyan-50 dark:bg-cyan-900/30 ring-2 ring-cyan-500' 
+                                    : 'border-gray-200 dark:border-gray-700 hover:border-cyan-300 dark:hover:border-cyan-700'
                                 }`}
                               >
-                                <Sun className="h-6 w-6 mb-1" />
-                                <span className="text-sm">Light</span>
+                                <Sun className={`h-6 w-6 mb-1 ${
+                                  theme === 'light' ? 'text-cyan-600 dark:text-cyan-400' : 'text-gray-600 dark:text-gray-400'
+                                }`} />
+                                <span className={`text-sm ${
+                                  theme === 'light' ? 'text-cyan-600 dark:text-cyan-400 font-medium' : 'text-gray-700 dark:text-gray-300'
+                                }`}>
+                                  Light
+                                </span>
                               </button>
                               <button
-                                onClick={() => setPreferencesForm({...preferencesForm, theme: 'dark'})}
-                                className={`p-3 border rounded-lg flex flex-col items-center ${
-                                  preferencesForm.theme === 'dark' ? 'border-cyan-500 bg-cyan-50' : 'border-gray-200'
+                                onClick={() => handleThemeChange('dark')}
+                                className={`p-3 border rounded-lg flex flex-col items-center transition-all ${
+                                  theme === 'dark' 
+                                    ? 'border-cyan-500 bg-cyan-50 dark:bg-cyan-900/30 ring-2 ring-cyan-500' 
+                                    : 'border-gray-200 dark:border-gray-700 hover:border-cyan-300 dark:hover:border-cyan-700'
                                 }`}
                               >
-                                <Moon className="h-6 w-6 mb-1" />
-                                <span className="text-sm">Dark</span>
-                              </button>
-                              <button
-                                onClick={() => setPreferencesForm({...preferencesForm, theme: 'system'})}
-                                className={`p-3 border rounded-lg flex flex-col items-center ${
-                                  preferencesForm.theme === 'system' ? 'border-cyan-500 bg-cyan-50' : 'border-gray-200'
-                                }`}
-                              >
-                                <Smartphone className="h-6 w-6 mb-1" />
-                                <span className="text-sm">System</span>
+                                <Moon className={`h-6 w-6 mb-1 ${
+                                  theme === 'dark' ? 'text-cyan-600 dark:text-cyan-400' : 'text-gray-600 dark:text-gray-400'
+                                }`} />
+                                <span className={`text-sm ${
+                                  theme === 'dark' ? 'text-cyan-600 dark:text-cyan-400 font-medium' : 'text-gray-700 dark:text-gray-300'
+                                }`}>
+                                  Dark
+                                </span>
                               </button>
                             </div>
                           </div>
 
                           <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                               Language
                             </label>
                             <select
                               value={preferencesForm.language}
                               onChange={(e) => setPreferencesForm({...preferencesForm, language: e.target.value})}
-                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
                             >
                               <option value="en">English</option>
                               <option value="es">Español</option>
@@ -1266,13 +1295,13 @@ const SettingsPage = () => {
                           </div>
 
                           <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                               Font Size
                             </label>
                             <select
                               value={preferencesForm.fontSize}
                               onChange={(e) => setPreferencesForm({...preferencesForm, fontSize: e.target.value})}
-                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
                             >
                               <option value="small">Small</option>
                               <option value="medium">Medium</option>
@@ -1282,13 +1311,13 @@ const SettingsPage = () => {
                           </div>
 
                           <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                               Date Format
                             </label>
                             <select
                               value={preferencesForm.dateFormat}
                               onChange={(e) => setPreferencesForm({...preferencesForm, dateFormat: e.target.value})}
-                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
                             >
                               <option value="MM/DD/YYYY">MM/DD/YYYY</option>
                               <option value="DD/MM/YYYY">DD/MM/YYYY</option>
@@ -1297,13 +1326,13 @@ const SettingsPage = () => {
                           </div>
 
                           <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                               Time Format
                             </label>
                             <select
                               value={preferencesForm.timeFormat}
                               onChange={(e) => setPreferencesForm({...preferencesForm, timeFormat: e.target.value})}
-                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
                             >
                               <option value="12h">12-hour (AM/PM)</option>
                               <option value="24h">24-hour</option>
@@ -1313,14 +1342,14 @@ const SettingsPage = () => {
                       </div>
 
                       <div>
-                        <h3 className="text-lg font-medium text-gray-900 mb-4">Accessibility</h3>
+                        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Accessibility</h3>
                         <div className="space-y-3">
                           <label className="flex items-center justify-between">
-                            <span className="text-gray-700">Reduce Animations</span>
+                            <span className="text-gray-700 dark:text-gray-300">Reduce Animations</span>
                             <button
                               onClick={() => setPreferencesForm({...preferencesForm, reduceAnimations: !preferencesForm.reduceAnimations})}
                               className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                                preferencesForm.reduceAnimations ? 'bg-cyan-500' : 'bg-gray-300'
+                                preferencesForm.reduceAnimations ? 'bg-cyan-500' : 'bg-gray-300 dark:bg-gray-600'
                               }`}
                             >
                               <span
@@ -1332,11 +1361,11 @@ const SettingsPage = () => {
                           </label>
 
                           <label className="flex items-center justify-between">
-                            <span className="text-gray-700">High Contrast</span>
+                            <span className="text-gray-700 dark:text-gray-300">High Contrast</span>
                             <button
                               onClick={() => setPreferencesForm({...preferencesForm, highContrast: !preferencesForm.highContrast})}
                               className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                                preferencesForm.highContrast ? 'bg-cyan-500' : 'bg-gray-300'
+                                preferencesForm.highContrast ? 'bg-cyan-500' : 'bg-gray-300 dark:bg-gray-600'
                               }`}
                             >
                               <span
@@ -1350,14 +1379,14 @@ const SettingsPage = () => {
                       </div>
 
                       <div>
-                        <h3 className="text-lg font-medium text-gray-900 mb-4">Display Options</h3>
+                        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Display Options</h3>
                         <div className="space-y-3">
                           <label className="flex items-center justify-between">
-                            <span className="text-gray-700">Show Emoji Picker</span>
+                            <span className="text-gray-700 dark:text-gray-300">Show Emoji Picker</span>
                             <button
                               onClick={() => setPreferencesForm({...preferencesForm, showEmoji: !preferencesForm.showEmoji})}
                               className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                                preferencesForm.showEmoji ? 'bg-cyan-500' : 'bg-gray-300'
+                                preferencesForm.showEmoji ? 'bg-cyan-500' : 'bg-gray-300 dark:bg-gray-600'
                               }`}
                             >
                               <span
@@ -1369,11 +1398,11 @@ const SettingsPage = () => {
                           </label>
 
                           <label className="flex items-center justify-between">
-                            <span className="text-gray-700">Compact Mode</span>
+                            <span className="text-gray-700 dark:text-gray-300">Compact Mode</span>
                             <button
                               onClick={() => setPreferencesForm({...preferencesForm, compactMode: !preferencesForm.compactMode})}
                               className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                                preferencesForm.compactMode ? 'bg-cyan-500' : 'bg-gray-300'
+                                preferencesForm.compactMode ? 'bg-cyan-500' : 'bg-gray-300 dark:bg-gray-600'
                               }`}
                             >
                               <span
@@ -1385,11 +1414,11 @@ const SettingsPage = () => {
                           </label>
 
                           <label className="flex items-center justify-between">
-                            <span className="text-gray-700">Collapse Sidebar</span>
+                            <span className="text-gray-700 dark:text-gray-300">Collapse Sidebar</span>
                             <button
                               onClick={() => setPreferencesForm({...preferencesForm, sidebarCollapsed: !preferencesForm.sidebarCollapsed})}
                               className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                                preferencesForm.sidebarCollapsed ? 'bg-cyan-500' : 'bg-gray-300'
+                                preferencesForm.sidebarCollapsed ? 'bg-cyan-500' : 'bg-gray-300 dark:bg-gray-600'
                               }`}
                             >
                               <span
@@ -1407,21 +1436,21 @@ const SettingsPage = () => {
                   {/* Account Settings */}
                   {activeTab === 'account' && (
                     <div className="space-y-6">
-                      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                        <h3 className="text-lg font-medium text-yellow-800 mb-2 flex items-center">
+                      <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+                        <h3 className="text-lg font-medium text-yellow-800 dark:text-yellow-400 mb-2 flex items-center">
                           <AlertTriangle className="h-5 w-5 mr-2" />
                           Danger Zone
                         </h3>
-                        <p className="text-sm text-yellow-700 mb-4">
+                        <p className="text-sm text-yellow-700 dark:text-yellow-500 mb-4">
                           These actions are irreversible. Please proceed with caution.
                         </p>
                         
                         <div className="space-y-4">
-                          <div className="bg-white rounded-lg p-4 border border-yellow-200">
+                          <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-yellow-200 dark:border-yellow-800">
                             <div className="flex items-center justify-between">
                               <div>
-                                <h4 className="font-medium text-gray-900">Deactivate Account</h4>
-                                <p className="text-sm text-gray-500">
+                                <h4 className="font-medium text-gray-900 dark:text-white">Deactivate Account</h4>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">
                                   Temporarily disable your account. You can reactivate it later.
                                 </p>
                               </div>
@@ -1431,11 +1460,11 @@ const SettingsPage = () => {
                             </div>
                           </div>
 
-                          <div className="bg-white rounded-lg p-4 border border-red-200">
+                          <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-red-200 dark:border-red-800">
                             <div className="flex items-center justify-between">
                               <div>
-                                <h4 className="font-medium text-gray-900">Delete Account</h4>
-                                <p className="text-sm text-gray-500">
+                                <h4 className="font-medium text-gray-900 dark:text-white">Delete Account</h4>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">
                                   Permanently delete your account and all data.
                                 </p>
                               </div>
@@ -1448,11 +1477,11 @@ const SettingsPage = () => {
                             </div>
                           </div>
 
-                          <div className="bg-white rounded-lg p-4">
+                          <div className="bg-white dark:bg-gray-800 rounded-lg p-4">
                             <div className="flex items-center justify-between">
                               <div>
-                                <h4 className="font-medium text-gray-900">Download Your Data</h4>
-                                <p className="text-sm text-gray-500">
+                                <h4 className="font-medium text-gray-900 dark:text-white">Download Your Data</h4>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">
                                   Get a copy of all your data including posts, messages, and settings.
                                 </p>
                               </div>
@@ -1464,26 +1493,26 @@ const SettingsPage = () => {
                         </div>
                       </div>
 
-                      <div className="bg-gray-50 rounded-lg p-4">
-                        <h3 className="text-lg font-medium text-gray-900 mb-4">Account Information</h3>
+                      <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
+                        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Account Information</h3>
                         <div className="space-y-3">
                           <div className="flex justify-between">
-                            <span className="text-gray-600">Member since:</span>
-                            <span className="text-gray-900">
+                            <span className="text-gray-600 dark:text-gray-400">Member since:</span>
+                            <span className="text-gray-900 dark:text-white">
                               {currentUser?.createdAt ? new Date(currentUser.createdAt).toLocaleDateString() : 'N/A'}
                             </span>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-gray-600">Account status:</span>
-                            <span className="text-green-600 font-medium">Active</span>
+                            <span className="text-gray-600 dark:text-gray-400">Account status:</span>
+                            <span className="text-green-600 dark:text-green-400 font-medium">Active</span>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-gray-600">Email verified:</span>
-                            <span className="text-green-600">Yes</span>
+                            <span className="text-gray-600 dark:text-gray-400">Email verified:</span>
+                            <span className="text-green-600 dark:text-green-400">Yes</span>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-gray-600">Phone verified:</span>
-                            <span className="text-yellow-600">No</span>
+                            <span className="text-gray-600 dark:text-gray-400">Phone verified:</span>
+                            <span className="text-yellow-600 dark:text-yellow-400">No</span>
                           </div>
                         </div>
                       </div>

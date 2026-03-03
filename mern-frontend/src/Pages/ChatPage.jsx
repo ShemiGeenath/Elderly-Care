@@ -82,20 +82,20 @@ const ChatPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-900">
-      <div className="flex h-screen">
-        <Sidebar user={currentUser} onLogout={handleLogout} />
+    <div className="flex h-screen">
+      <Sidebar user={currentUser} onLogout={handleLogout} />
+      
+      <div className="ml-32 flex-1 flex flex-col">
+        <Navbar user={currentUser} />
         
-        <div className="flex-1 flex flex-col">
-          <Navbar user={currentUser} />
-          
-          <div className="flex-1 p-4 bg-gray-100 overflow-hidden">
-            <div className="h-full">
-              <ChatInterface currentUser={currentUser} />
-            </div>
+        <div className="flex-1 p-4 bg-gray-100 overflow-hidden">
+          <div className="h-full">
+            <ChatInterface currentUser={currentUser} />
           </div>
         </div>
       </div>
     </div>
+  </div>
   );
 };
 

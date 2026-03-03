@@ -1,1 +1,154 @@
+/* frontend/src/App.css */
 @import "tailwindcss";
+
+/* CSS Variables for theming */
+:root {
+  --bg-primary: #f3f4f6;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #f9fafb;
+  --bg-card: #ffffff;
+  --text-primary: #111827;
+  --text-secondary: #4b5563;
+  --text-tertiary: #6b7280;
+  --border-color: #e5e7eb;
+  --input-bg: #ffffff;
+  --hover-bg: #f3f4f6;
+  --gradient-start: #3b82f6;
+  --gradient-end: #8b5cf6;
+}
+
+.dark {
+  --bg-primary: #111827;
+  --bg-secondary: #1f2937;
+  --bg-tertiary: #374151;
+  --bg-card: #1f2937;
+  --text-primary: #f9fafb;
+  --text-secondary: #d1d5db;
+  --text-tertiary: #9ca3af;
+  --border-color: #374151;
+  --input-bg: #374151;
+  --hover-bg: #374151;
+  --gradient-start: #06b6d4;
+  --gradient-end: #3b82f6;
+}
+
+/* Apply variables to elements */
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  transition: background-color 0.3s ease, color 0.3s ease;
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Override Tailwind classes with CSS variables */
+.bg-gray-50,
+.bg-gray-100 {
+  background-color: var(--bg-primary) !important;
+}
+
+.bg-white,
+.bg-gray-800,
+.bg-gray-900 {
+  background-color: var(--bg-secondary) !important;
+}
+
+.bg-gradient-to-br.from-gray-50.to-blue-50 {
+  background: var(--bg-primary) !important;
+}
+
+/* Card backgrounds */
+.bg-white.rounded-2xl,
+.bg-white.rounded-xl,
+.bg-white.rounded-lg,
+div[class*="bg-white"] {
+  background-color: var(--bg-card) !important;
+}
+
+/* Text colors */
+.text-gray-900,
+h1, h2, h3, h4, h5, h6 {
+  color: var(--text-primary) !important;
+}
+
+.text-gray-700,
+p, span:not([class*="text-cyan"]) {
+  color: var(--text-secondary) !important;
+}
+
+.text-gray-600,
+.text-gray-500,
+.text-gray-400 {
+  color: var(--text-tertiary) !important;
+}
+
+/* Border colors */
+.border-gray-200,
+.border-gray-300,
+.border-gray-100,
+.border-gray-700,
+.border-gray-800 {
+  border-color: var(--border-color) !important;
+}
+
+/* Input styles */
+input, select, textarea {
+  background-color: var(--input-bg) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--border-color) !important;
+}
+
+input::placeholder, textarea::placeholder {
+  color: var(--text-tertiary) !important;
+}
+
+/* Hover effects */
+.hover\:bg-gray-50:hover,
+.hover\:bg-gray-100:hover,
+.hover\:bg-gray-800\/50:hover {
+  background-color: var(--hover-bg) !important;
+}
+
+/* Keep gradient backgrounds */
+.bg-gradient-to-r {
+  background-image: linear-gradient(to right, var(--gradient-start), var(--gradient-end)) !important;
+}
+
+/* Animation */
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.9;
+  }
+}
+
+.animate-pulse {
+  animation: pulse 2s infinite;
+}
+
+@keyframes gentlePulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.7);
+    transform: scale(1);
+  }
+  70% {
+    box-shadow: 0 0 0 15px rgba(37, 99, 235, 0);
+    transform: scale(1.05);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(37, 99, 235, 0);
+    transform: scale(1);
+  }
+}
+
+.floating-chat-btn {
+  animation: gentlePulse 2s infinite;
+}

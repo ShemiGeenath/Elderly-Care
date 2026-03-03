@@ -70,7 +70,7 @@ const menuItems = [
   };
 
   return (
-    <div className="w-32 min-w-32 h-screen bg-gradient-to-b from-gray-900 to-black border-r border-gray-800 shadow-xl">
+    <div className="fixed w-32 min-w-32 h-screen bg-gradient-to-b from-gray-900 to-black border-r border-gray-800 shadow-xl">
       <div className="flex flex-col h-full py-4">
 
         {/* LOGO */}

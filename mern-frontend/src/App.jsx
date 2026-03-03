@@ -1,6 +1,7 @@
 // App.jsx
 import { Routes, Route } from "react-router-dom";
 import { ChatProvider } from './context/ChatContext';
+import { ThemeProvider } from './context/ThemeContext'; // Add this import
 import "./App.css";
 
 import ElderlyLoginForm from "./components/ElderlyLoginForm";
@@ -10,21 +11,28 @@ import MyProfilePage from "./Pages/MyProfilePage";
 import FriendsPage from "./Pages/FriendsPage";
 import HelpPage from "./Pages/HelpPage";
 import ChatPage from "./Pages/ChatPage";
-import SettingsPage from "./Pages/SettingsPage";
+import SettingsPage from "./Pages/SettingsPage";   
+import ElderlyCareChatbot from "./Pages/ElderlyCareChatbot";
+import Layout from "./components/Layout";
 
 function App() {
   return (
     <ChatProvider>
-      <Routes>
-        <Route path="/login" element={<ElderlyRegistrationForm />} />
-        <Route path="/" element={<ElderlyLoginForm />} />
-        <Route path="/liberta-home" element={<LibertaHomePage />} />
-        <Route path="/profile/:id" element={<MyProfilePage />} />
-        <Route path="/FriendsPage" element={<FriendsPage />} />
-        <Route path="/HelpPage" element={<HelpPage />} />
-        <Route path="/chat" element={<ChatPage />} />
-        <Route path="/settings" element={<SettingsPage />} />
-      </Routes>
+      <ThemeProvider> {/* Add ThemeProvider here */}
+        <Layout>
+          <Routes>
+            <Route path="/login" element={<ElderlyRegistrationForm />} />
+            <Route path="/" element={<ElderlyLoginForm />} />
+            <Route path="/liberta-home" element={<LibertaHomePage />} />
+            <Route path="/profile/:id" element={<MyProfilePage />} />
+            <Route path="/FriendsPage" element={<FriendsPage />} />
+            <Route path="/HelpPage" element={<HelpPage />} />
+            <Route path="/chat" element={<ChatPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/ElderlyCareChatbot" element={<ElderlyCareChatbot />} />
+          </Routes>
+        </Layout>
+      </ThemeProvider>
     </ChatProvider>
   );
 }

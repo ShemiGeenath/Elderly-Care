@@ -541,3 +541,23 @@ exports.createInitialAdmin = async (req, res) => {
     });
   }
 };
+
+// Add this to controllers/adminController.js
+// @desc    Get admin profile
+// @route   GET /api/admin/profile
+// @access  Private (Admin)
+exports.getAdminProfile = async (req, res) => {
+  try {
+    const admin = await AdminUser.findById(req.admin._id).select('-password');
+    res.json({
+      success: true,
+      admin
+    });
+  } catch (error) {
+    console.error("Get admin profile error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error fetching profile"
+    });
+  }
+};

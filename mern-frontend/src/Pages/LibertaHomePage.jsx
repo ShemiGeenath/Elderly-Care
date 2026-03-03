@@ -15,6 +15,7 @@ import {
 import Sidebar from "../components/Sidebar";
 import Navbar from "../components/Navbar";
 import axiosInstance from "../api/axiosConfig"; // Import axios instance
+import FloatingChatbot from '../components/FloatingChatbot';
 
 const LibertaHomePage = () => {
   const [user, setUser] = useState(null);
@@ -164,15 +165,15 @@ useEffect(() => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 flex">
+    <div className="min-h-screen bg-gray-900">
       {/* Sidebar */}
-      <Sidebar user={user} onLogout={handleLogout} />
+     <Sidebar user={user} onLogout={handleLogout} />
       
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col">
+       <div className="ml-32 flex flex-col min-h-screen">
         <Navbar user={user} />
         
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto bg-gray-900">
           <div className="max-w-3xl mx-auto p-6">
             {/* Create Post Section */}
             <div className="bg-gray-800 rounded-xl border border-gray-700 p-6 mb-6">
@@ -393,6 +394,7 @@ useEffect(() => {
           </div>
         </main>
       </div>
+      <FloatingChatbot />
     </div>
   );
 };

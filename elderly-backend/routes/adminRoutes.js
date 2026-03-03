@@ -3,6 +3,7 @@ const express = require("express");
 const router = express.Router();
 const { 
   adminLogin,
+  getAdminProfile, // Add this
   getAllUsers,
   getUserDetails,
   updateUserStatus,
@@ -21,6 +22,9 @@ router.post("/init", createInitialAdmin); // Remove this after first use
 
 // Protected routes
 router.use(adminAuth);
+
+// Profile - Add this before other routes
+router.get("/profile", getAdminProfile);
 
 // Dashboard
 router.get("/dashboard/stats", getDashboardStats);

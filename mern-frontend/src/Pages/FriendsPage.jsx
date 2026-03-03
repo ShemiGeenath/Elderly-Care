@@ -127,9 +127,8 @@ const FriendsPage = () => {
     }
   };
 
-  // FIXED: Handle message button click - navigate to chat with this user
+  // Handle message button click - navigate to chat with this user
   const handleMessageUser = (userId) => {
-    // Navigate to chat page with the user ID as a query parameter
     navigate(`/chat?user=${userId}`);
   };
 
@@ -162,17 +161,17 @@ const FriendsPage = () => {
   }
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50">
       {/* Sidebar */}
       <Sidebar user={currentUser} />
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col">
+      <div className="ml-32 flex-1 flex flex-col">
         {/* Navbar */}
         <Navbar user={currentUser} />
 
         {/* Friends Page Content */}
-        <div className="flex-1 p-6 bg-gradient-to-br from-gray-50 to-blue-50">
+       <div className="flex-1 p-6 bg-gradient-to-br from-gray-50 to-blue-50">
           {/* Header with Stats */}
           <div className="mb-8">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -394,12 +393,20 @@ const FriendsPage = () => {
                       key={user._id}
                       className="bg-white rounded-2xl shadow-sm overflow-hidden hover:shadow-xl transition-all duration-300 border border-gray-100 group"
                     >
-                      {/* Header with Gradient */}
-                      <div className="relative h-48 bg-gradient-to-r from-blue-500 to-purple-600">
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
-                        <div className="absolute -bottom-12 left-1/2 transform -translate-x-1/2">
+                      {/* Header with Cover Photo */}
+                      <div 
+                        className="relative h-32 bg-cover bg-center"
+                        style={{
+                          backgroundImage: `url(${user.coverPhoto || 'https://res.cloudinary.com/your-cloud-name/image/upload/v1/eldercare/defaults/default-cover.jpg'})`
+                        }}
+                      >
+                        {/* Gradient Overlay */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
+                        
+                        {/* Profile Photo Positioned at Bottom */}
+                        <div className="absolute -bottom-12 left-1/2 transform -translate-x-1/2 z-10">
                           <div className="relative">
-                            <div className="h-28 w-28 rounded-full bg-gradient-to-r from-blue-400 to-purple-500 p-1">
+                            <div className="h-24 w-24 rounded-full bg-gradient-to-r from-blue-400 to-purple-500 p-1 shadow-lg">
                               <img
                                 src={user.profilePhoto || "/default-avatar.png"}
                                 alt={user.firstName}
@@ -485,7 +492,7 @@ const FriendsPage = () => {
                           )}
                         </div>
 
-                        {/* Action Buttons - FIXED: Added handleMessageUser */}
+                        {/* Action Buttons */}
                         <div className="mt-6 pt-6 border-t border-gray-100">
                           <div className="flex space-x-3">
                             <button
