@@ -1,8 +1,8 @@
-// ElderlyLoginForm.jsx - Updated Version
+// ElderlyLoginForm.jsx - Complete Updated Version with Google Login
 import React, { useState } from 'react';
 import { useNavigate } from "react-router-dom";
-
 import { FaUser, FaLock, FaEye, FaEyeSlash, FaLeaf, FaBook, FaMusic, FaHandsHelping, FaCar, FaPills, FaUtensils } from 'react-icons/fa';
+import GoogleLoginButton from '../components/GoogleLoginButton';
 
 const ElderlyLoginForm = () => {
   const navigate = useNavigate(); 
@@ -10,7 +10,7 @@ const ElderlyLoginForm = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [formData, setFormData] = useState({
-    email: '', // Changed from username to email to match registration
+    email: '',
     password: ''
   });
   const [error, setError] = useState('');
@@ -22,49 +22,54 @@ const ElderlyLoginForm = () => {
       ...formData,
       [name]: value
     });
-    setError(''); // Clear error on typing
+    setError('');
   };
 
- // In ElderlyLoginForm.jsx handleSubmit function:
-const handleSubmit = async (e) => {
-  e.preventDefault();
-  setLoading(true);
-  setError('');
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
 
-  try {
-    const res = await fetch("http://localhost:5000/api/elderly/login", {
-      method: "POST",
-      headers: { 
-        "Content-Type": "application/json" 
-      },
-      body: JSON.stringify({
-        email: formData.email.toLowerCase(), // Ensure lowercase
-        password: formData.password
-      }),
-    });
+    try {
+      const res = await fetch("http://localhost:5000/api/elderly/login", {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json" 
+        },
+        body: JSON.stringify({
+          email: formData.email.toLowerCase(),
+          password: formData.password
+        }),
+      });
 
-    const data = await res.json();
+      const data = await res.json();
 
-    if (data.success && data.token) {
-      // Store token and user details
-      localStorage.setItem("elderlyToken", data.token);
-      localStorage.setItem("elderlyUser", JSON.stringify(data.user));
-      
-      // Navigate to home - ensure this route exists in your Router
-      navigate("/liberta-home");
-    } else {
-      setError(data.message || "Login failed. Please check your credentials.");
+      if (data.success && data.token) {
+        localStorage.setItem("elderlyToken", data.token);
+        localStorage.setItem("elderlyUser", JSON.stringify(data.user));
+        navigate("/liberta-home");
+      } else {
+        setError(data.message || "Login failed. Please check your credentials.");
+      }
+    } catch (err) {
+      console.error("Login error:", err);
+      setError("Connection error. Please check if the server is running.");
+    } finally {
+      setLoading(false);
     }
-  } catch (err) {
-    console.error("Login error:", err);
-    setError("Connection error. Please check if the server is running on port 5000.");
-  } finally {
-    setLoading(false);
-  }
-};
-  // Function to handle registration redirect
+  };
+
   const handleRegisterRedirect = () => {
     navigate("/login");
+  };
+
+  const handleGoogleSuccess = (user) => {
+    console.log('Google login successful:', user);
+    // Navigation is handled in GoogleLoginButton component
+  };
+
+  const handleGoogleError = (errorMsg) => {
+    setError(errorMsg || 'Google login failed. Please try again.');
   };
 
   return (
@@ -158,7 +163,7 @@ const handleSubmit = async (e) => {
                 </label>
                 <div className="relative">
                   <input
-                    type="email" // Changed to email type
+                    type="email"
                     id="email"
                     name="email"
                     value={formData.email}
@@ -220,35 +225,47 @@ const handleSubmit = async (e) => {
               
               <button
                 type="submit"
+                data-testid="login-btn"
                 disabled={loading}
                 className={`w-full bg-gradient-to-r from-blue-600 to-teal-500 text-white text-2xl font-semibold py-5 px-6 rounded-2xl transition-all shadow-xl hover:shadow-2xl hover:scale-[1.02] mb-8 ${loading ? 'opacity-70 cursor-not-allowed' : 'hover:opacity-95'}`}
               >
                 {loading ? 'Logging In...' : 'Log In'}
               </button>
-              
-              <div className="text-center mb-10">
-                <p className="text-gray-300 text-xl">
-                  Need help to Sign in? 
-                  <button type="button" className="text-blue-400 hover:text-blue-300 font-medium ml-3 hover:underline">
-                    Click here for assistance
-                  </button>
-                </p>
-              </div>
-              
-              <div className="flex items-center my-8">
-                <div className="flex-grow border-t border-gray-600"></div>
-                <span className="mx-6 text-gray-400 text-2xl">or</span>
-                <div className="flex-grow border-t border-gray-600"></div>
-              </div>
-              
-              <button
-                type="button"
-                onClick={handleRegisterRedirect}
-                className="w-full py-5 text-xl font-semibold bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-2xl hover:opacity-95 transition-all shadow-lg hover:shadow-xl hover:scale-[1.02]"
-              >
-                Create New Account
-              </button>
             </form>
+
+            {/* Divider */}
+            <div className="flex items-center my-8">
+              <div className="flex-grow border-t border-gray-600"></div>
+              <span className="mx-6 text-gray-400 text-2xl">or</span>
+              <div className="flex-grow border-t border-gray-600"></div>
+            </div>
+
+            {/* Google Login Button */}
+            <div className="mb-8">
+              <GoogleLoginButton 
+                buttonText="Continue with Google"
+                onSuccess={handleGoogleSuccess}
+                onError={handleGoogleError}
+              />
+            </div>
+            
+            {/* Create Account Button */}
+            <button
+              type="button"
+              onClick={handleRegisterRedirect}
+              className="w-full py-5 text-xl font-semibold bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-2xl hover:opacity-95 transition-all shadow-lg hover:shadow-xl hover:scale-[1.02]"
+            >
+              Create New Account
+            </button>
+            
+            <div className="text-center mt-8">
+              <p className="text-gray-300 text-lg">
+                Need help to Sign in? 
+                <button type="button" className="text-blue-400 hover:text-blue-300 font-medium ml-3 hover:underline">
+                  Click here for assistance
+                </button>
+              </p>
+            </div>
           </div>
         </div>
       </div>

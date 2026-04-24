@@ -35,8 +35,13 @@ import {
 } from 'lucide-react';
 import Sidebar from '../components/Sidebar';
 import Navbar from '../components/Navbar';
+import { useLanguage } from '../context/LanguageContext';
+import useTranslation from '../hooks/useTranslation';
 
 const HelpPage = () => {
+  const { getTranslation } = useLanguage();
+  const { t } = useTranslation();
+  
   const [activeTab, setActiveTab] = useState('request');
   const [showRequestForm, setShowRequestForm] = useState(false);
   const [showGiveForm, setShowGiveForm] = useState(false);
@@ -48,6 +53,180 @@ const HelpPage = () => {
   const [editingRequest, setEditingRequest] = useState(null);
   const [editingItem, setEditingItem] = useState(null);
   
+  // Translation helper functions - Main UI
+  const getLoadingText = () => getTranslation("Loading help system...", "උදව් පද්ධතිය පූරණය වෙමින්...");
+  const getCommunityHelpTitle = () => getTranslation("Community Help & Support", "ප්‍රජා උදව් සහ සහාය");
+  const getCommunityHelpSubtitle = () => getTranslation(
+    "Request help, give items, or volunteer to support fellow seniors",
+    "උදව් ඉල්ලන්න, භාණ්ඩ දෙන්න, හෝ සෙසු වැඩිහිටියන්ට සහාය වීමට ස්වේච්ඡාවෙන් ඉදිරිපත් වන්න"
+  );
+  
+  // Tab labels
+  const getRequestHelp = () => getTranslation("Request Help", "උදව් ඉල්ලන්න");
+  const getGiveItems = () => getTranslation("Give Items", "භාණ්ඩ ලබා දෙන්න");
+  const getVolunteer = () => getTranslation("Volunteer", "ස්වේච්ඡාවෙන්");
+  const getMyActivities = () => getTranslation("My Activities", "මගේ කටයුතු");
+  
+  // Request Help section
+  const getRequestHelpTitle = () => getTranslation("Request Help from Community", "ප්‍රජාවෙන් උදව් ඉල්ලන්න");
+  const getRequestHelpSubtitle = () => getTranslation(
+    "Our volunteers are ready to assist with your daily needs",
+    "අපගේ ස්වේච්ඡා සේවකයින් ඔබගේ දෛනික අවශ්‍යතා සඳහා උපකාර කිරීමට සූදානම්"
+  );
+  const getNewHelpRequest = () => getTranslation("New Help Request", "නව උදව් ඉල්ලීම");
+  const getClickToRequest = () => getTranslation("Click to request help", "උදව් ඉල්ලීමට ක්ලික් කරන්න");
+  const getMyActiveRequests = () => getTranslation("My Active Requests", "මගේ ක්‍රියාකාරී ඉල්ලීම්");
+  const getBackToHelpTypes = () => getTranslation("← Back to Help Types", "← උදව් වර්ග වෙත ආපසු");
+  const getWhatTypeOfHelp = () => getTranslation("What type of help do you need? *", "ඔබට අවශ්‍ය උදව් වර්ගය කුමක්ද? *");
+  const getTitle = () => getTranslation("Title *", "මාතෘකාව *");
+  const getBriefTitle = () => getTranslation("Brief title for your request", "ඔබගේ ඉල්ලීම සඳහා කෙටි මාතෘකාවක්");
+  const getDescription = () => getTranslation("Description *", "විස්තරය *");
+  const getDescribeHelp = () => getTranslation("Please describe what you need help with in detail...", "කරුණාකර ඔබට උදව් අවශ්‍ය දේ විස්තරාත්මකව විස්තර කරන්න...");
+  const getLocation = () => getTranslation("Location *", "ස්ථානය *");
+  const getWhereNeedHelp = () => getTranslation("Where do you need help?", "ඔබට උදව් අවශ්‍ය ස්ථානය කොහේද?");
+  const getUrgencyLevel = () => getTranslation("Urgency Level", "හදිසි මට්ටම");
+  const getScheduledDate = () => getTranslation("Scheduled Date (Optional)", "නියමිත දිනය (විකල්ප)");
+  const getEstimatedHours = () => getTranslation("Estimated Hours (Optional)", "ඇස්තමේන්තුගත පැය (විකල්ප)");
+  const getSubmitHelpRequest = () => getTranslation("Submit Help Request", "උදව් ඉල්ලීම ඉදිරිපත් කරන්න");
+  const getSubmitting = () => getTranslation("Submitting...", "ඉදිරිපත් කරමින්...");
+  const getCancel = () => getTranslation("Cancel", "අවලංගු කරන්න");
+  
+  // Volunteer section
+  const getVolunteerOpportunities = () => getTranslation("Volunteer Opportunities", "ස්වේච්ඡා අවස්ථා");
+  const getHelpFellowSeniors = () => getTranslation("Help fellow seniors in your community", "ඔබගේ ප්‍රජාවේ සෙසු වැඩිහිටියන්ට උදව් කරන්න");
+  const getFilters = () => getTranslation("Filters", "පෙරහන්");
+  const getSearch = () => getTranslation("Search", "සොයන්න");
+  const getSearchRequests = () => getTranslation("Search requests...", "ඉල්ලීම් සොයන්න...");
+  const getType = () => getTranslation("Type", "වර්ගය");
+  const getAllTypes = () => getTranslation("All Types", "සියලුම වර්ග");
+  const getUrgency = () => getTranslation("Urgency", "හදිසි බව");
+  const getAllUrgency = () => getTranslation("All Urgency", "සියලුම හදිසි බව");
+  const getLow = () => getTranslation("Low", "අඩු");
+  const getMedium = () => getTranslation("Medium", "මධ්යම");
+  const getHigh = () => getTranslation("High", "ඉහළ");
+  const getUrgent = () => getTranslation("Urgent", "හදිසි");
+  const getFilterByLocation = () => getTranslation("Filter by location", "ස්ථානය අනුව පෙරන්න");
+  const getClearFilters = () => getTranslation("Clear Filters", "පෙරහන් ඉවත් කරන්න");
+  const getAccept = () => getTranslation("Accept", "පිළිගන්න");
+  const getNoRequestsMatch = () => getTranslation("No help requests match your filters.", "ඔබගේ පෙරහන් වලට ගැලපෙන උදව් ඉල්ලීම් නොමැත.");
+  const getPrevious = () => getTranslation("Previous", "පෙර");
+  const getNext = () => getTranslation("Next", "ඊළඟ");
+  const getViewDetails = () => getTranslation("View Details", "විස්තර බලන්න");
+  const getEditRequest = () => getTranslation("Edit Request", "ඉල්ලීම සංස්කරණය කරන්න");
+  const getDeleteRequest = () => getTranslation("Delete Request", "ඉල්ලීම මකන්න");
+  const getCancelRequest = () => getTranslation("Cancel Request", "ඉල්ලීම අවලංගු කරන්න");
+  
+  // Give Items section
+  const getGiveItemsTitle = () => getTranslation("Give Items to Community", "ප්‍රජාවට භාණ්ඩ ලබා දෙන්න");
+  const getGiveItemsSubtitle = () => getTranslation(
+    "Share items you no longer need with fellow seniors",
+    "ඔබට තවදුරටත් අවශ්‍ය නොවන භාණ්ඩ සෙසු වැඩිහිටියන් සමඟ බෙදාගන්න"
+  );
+  const getListNewItem = () => getTranslation("List New Item", "නව භාණ්ඩයක් ලැයිස්තුගත කරන්න");
+  const getPopularCategories = () => getTranslation("Popular Categories", "ජනප්‍රිය කාණ්ඩ");
+  const getAvailableItems = () => getTranslation("Available Items", "පවතින භාණ්ඩ");
+  const getFilterItems = () => getTranslation("Filter Items", "භාණ්ඩ පෙරන්න");
+  const getSearchItems = () => getTranslation("Search items...", "භාණ්ඩ සොයන්න...");
+  const getCategory = () => getTranslation("Category", "කාණ්ඩය");
+  const getAllCategories = () => getTranslation("All Categories", "සියලුම කාණ්ඩ");
+  const getCondition = () => getTranslation("Condition", "තත්වය");
+  const getAllConditions = () => getTranslation("All Conditions", "සියලුම තත්වයන්");
+  const getNew = () => getTranslation("New", "අලුත්");
+  const getLikeNew = () => getTranslation("Like New", "අලුත් වගේ");
+  const getGood = () => getTranslation("Good", "හොඳයි");
+  const getFair = () => getTranslation("Fair", "සාමාන්‍ය");
+  const getReserve = () => getTranslation("Reserve", "වෙන් කරන්න");
+  const getNoItemsAvailable = () => getTranslation("No items available at the moment.", "මේ මොහොතේ භාණ්ඩ නොමැත.");
+  const getListFirstItem = () => getTranslation("List Your First Item", "ඔබගේ පළමු භාණ්ඩය ලැයිස්තුගත කරන්න");
+  const getBackToItems = () => getTranslation("← Back to Items", "← භාණ්ඩ වෙත ආපසු");
+  const getListItemTitle = () => getTranslation("List an Item to Give", "ලබා දීමට භාණ්ඩයක් ලැයිස්තුගත කරන්න");
+  const getSelectCategory = () => getTranslation("Select a category", "කාණ්ඩයක් තෝරන්න");
+  const getItemTitle = () => getTranslation("Title *", "මාතෘකාව *");
+  const getItemTitlePlaceholder = () => getTranslation("e.g., Walking Cane, Winter Coat", "උදා: ඇවිදීමේ සැරයටිය, ශීත කබාය");
+  const getItemDescription = () => getTranslation("Description *", "විස්තරය *");
+  const getItemDescriptionPlaceholder = () => getTranslation(
+    "Describe the item, its condition, and any important details...",
+    "භාණ්ඩය, එහි තත්වය සහ වැදගත් විස්තර විස්තර කරන්න..."
+  );
+  const getItemCondition = () => getTranslation("Condition *", "තත්වය *");
+  const getQuantity = () => getTranslation("Quantity *", "ප්‍රමාණය *");
+  const getItemLocation = () => getTranslation("Location *", "ස්ථානය *");
+  const getCityNeighborhood = () => getTranslation("City or neighborhood", "නගරය හෝ අසල්වැසි ප්‍රදේශය");
+  const getPickupLocation = () => getTranslation("Pickup Location (Optional)", "භාණ්ඩ ලබාගැනීමේ ස්ථානය (විකල්ප)");
+  const getPickupLocationPlaceholder = () => getTranslation("Specific pickup address or meetup point", "නිශ්චිත භාණ්ඩ ලබාගැනීමේ ලිපිනය හෝ හමුවීමේ ස්ථානය");
+  const getExpiryDate = () => getTranslation("Expiry Date (Optional)", "කල් ඉකුත්වන දිනය (විකල්ප)");
+  const getContactMethod = () => getTranslation("Preferred Contact Method", "කැමති සම්බන්ධතා ක්‍රමය");
+  const getInAppChat = () => getTranslation("In-app Chat", "යෙදුම් තුළ කතාබස්");
+  const getPhone = () => getTranslation("Phone", "දුරකථන");
+  const getEmail = () => getTranslation("Email", "විද්‍යුත් තැපෑල");
+  const getListItem = () => getTranslation("List Item", "භාණ්ඩය ලැයිස්තුගත කරන්න");
+  const getListing = () => getTranslation("Listing...", "ලැයිස්තුගත කරමින්...");
+  
+  // My Activities section
+  const getMyHelpRequests = () => getTranslation("My Help Requests", "මගේ උදව් ඉල්ලීම්");
+  const getNoHelpRequests = () => getTranslation("No help requests yet", "තවම උදව් ඉල්ලීම් නැත");
+  const getImVolunteeringFor = () => getTranslation("I'm Volunteering For", "මම ස්වේච්ඡාවෙන් ඉදිරිපත් වන්නේ");
+  const getRequester = () => getTranslation("Requester:", "ඉල්ලන්නා:");
+  const getMyItemListings = () => getTranslation("My Item Listings", "මගේ භාණ්ඩ ලැයිස්තුගත කිරීම්");
+  const getReservedBy = () => getTranslation("Reserved by:", "වෙන් කරන ලද්දේ:");
+  const getNoActivitiesYet = () => getTranslation("No Activities Yet", "තවම ක්‍රියාකාරකම් නැත");
+  const getStartActivities = () => getTranslation("Start by requesting help, listing items, or volunteering!", "උදව් ඉල්ලීම, භාණ්ඩ ලැයිස්තුගත කිරීම හෝ ස්වේච්ඡාවෙන් ඉදිරිපත් වීම ආරම්භ කරන්න!");
+  
+  // Modal texts
+  const getHelpRequestDetails = () => getTranslation("Help Request Details", "උදව් ඉල්ලීමේ විස්තර");
+  const getVolunteerInformation = () => getTranslation("Volunteer Information", "ස්වේච්ඡා සේවක තොරතුරු");
+  const getVolunteerAssigned = () => getTranslation("Volunteer Assigned:", "ස්වේච්ඡා සේවකයා පවරා ඇත:");
+  const getCreated = () => getTranslation("Created:", "සාදන ලද්දේ:");
+  const getScheduled = () => getTranslation("Scheduled:", "නියමිත:");
+  const getEstimated = () => getTranslation("Estimated:", "ඇස්තමේන්තුගත:");
+  const getClose = () => getTranslation("Close", "වසන්න");
+  const getItemDetails = () => getTranslation("Item Details", "භාණ්ඩ විස්තර");
+  const getListed = () => getTranslation("Listed:", "ලැයිස්තුගත කරන ලද්දේ:");
+  const getPickup = () => getTranslation("Pickup:", "භාණ්ඩ ලබාගැනීම:");
+  const getExpires = () => getTranslation("Expires:", "කල් ඉකුත් වේ:");
+  const getReceiverInformation = () => getTranslation("Receiver Information", "ලබන්නාගේ තොරතුරු");
+  const getReserveItem = () => getTranslation("Reserve Item", "භාණ්ඩය වෙන් කරන්න");
+  const getMarkAsGiven = () => getTranslation("Mark as Given", "ලබා දුන් ලෙස සලකුණු කරන්න");
+  const getEditHelpRequest = () => getTranslation("Edit Help Request", "උදව් ඉල්ලීම සංස්කරණය කරන්න");
+  const getEditItemListing = () => getTranslation("Edit Item Listing", "භාණ්ඩ ලැයිස්තුගත කිරීම සංස්කරණය කරන්න");
+  const getUpdateRequest = () => getTranslation("Update Request", "ඉල්ලීම යාවත්කාලීන කරන්න");
+  const getUpdating = () => getTranslation("Updating...", "යාවත්කාලීන කරමින්...");
+  const getUpdateItem = () => getTranslation("Update Item", "භාණ්ඩය යාවත්කාලීන කරන්න");
+  
+  // Common button texts
+  const getFollowing = () => getTranslation("Following", "අනුගමනය කරයි");
+  const getFollow = () => getTranslation("Follow", "අනුගමනය කරන්න");
+  const getMessage = () => getTranslation("Message", "පණිවුඩය");
+  const getProfile = () => getTranslation("Profile", "පැතිකඩ");
+  const getSave = () => getTranslation("Save", "සුරකින්න");
+  const getDelete = () => getTranslation("Delete", "මකන්න");
+  const getEdit = () => getTranslation("Edit", "සංස්කරණය");
+  
+  // Bilingual help types
+  const getHelpTypes = () => [
+    { id: "food", label: getTranslation("Food & Groceries", "ආහාර සහ සිල්ලර භාණ්ඩ"), icon: ShoppingBag, color: "bg-green-100 text-green-700", bgColor: "bg-green-500/10" },
+    { id: "medicine", label: getTranslation("Medicine Pickup", "ඖෂධ ලබාගැනීම"), icon: Pill, color: "bg-red-100 text-red-700", bgColor: "bg-red-500/10" },
+    { id: "transport", label: getTranslation("Transportation", "ප්‍රවාහනය"), icon: Car, color: "bg-blue-100 text-blue-700", bgColor: "bg-blue-500/10" },
+    { id: "errands", label: getTranslation("Run Errands", "කටයුතු කිරීම"), icon: Package, color: "bg-purple-100 text-purple-700", bgColor: "bg-purple-500/10" },
+    { id: "companionship", label: getTranslation("Companionship", "සහකාරිය"), icon: Users, color: "bg-pink-100 text-pink-700", bgColor: "bg-pink-500/10" },
+    { id: "household", label: getTranslation("Household Help", "ගෘහස්ථ උදව්"), icon: Home, color: "bg-orange-100 text-orange-700", bgColor: "bg-orange-500/10" },
+    { id: "other", label: getTranslation("Other Help", "වෙනත් උදව්"), icon: Heart, color: "bg-gray-100 text-gray-700", bgColor: "bg-gray-500/10" },
+  ];
+
+  const getItemCategories = () => [
+    { id: "clothing", label: getTranslation("Clothing", "ඇඳුම් පැළඳුම්"), icon: ShoppingBag },
+    { id: "furniture", label: getTranslation("Furniture", "ගෘහ භාණ්ඩ"), icon: Home },
+    { id: "electronics", label: getTranslation("Electronics", "ඉලෙක්ට්‍රොනික උපකරණ"), icon: Package },
+    { id: "books", label: getTranslation("Books", "පොත්"), icon: Package },
+    { id: "kitchen", label: getTranslation("Kitchen Items", "මුළුතැන්ගෙයි භාණ්ඩ"), icon: Package },
+    { id: "medical", label: getTranslation("Medical Equipment", "වෛද්‍ය උපකරණ"), icon: Pill },
+    { id: "mobility", label: getTranslation("Mobility Aids", "සංචලන ආධාරක"), icon: Heart },
+    { id: "other", label: getTranslation("Other", "වෙනත්"), icon: Gift },
+  ];
+
+  const helpTypes = getHelpTypes();
+  const itemCategories = getItemCategories();
+
   // Form states
   const [formData, setFormData] = useState({
     type: '',
@@ -113,8 +292,7 @@ const HelpPage = () => {
   const [currentUser, setCurrentUser] = useState(null);
 
   useEffect(() => {
-    // Get current user from localStorage
-    const userStr = localStorage.getItem('elderlyUser'); // Changed from 'user' to 'elderlyUser'
+    const userStr = localStorage.getItem('elderlyUser');
     if (userStr) {
       try {
         setCurrentUser(JSON.parse(userStr));
@@ -248,7 +426,7 @@ const HelpPage = () => {
   // Help Request Functions
   const handleSubmitHelpRequest = async () => {
     if (!formData.type || !formData.title || !formData.description || !formData.location) {
-      alert('Please fill in all required fields');
+      alert(getTranslation("Please fill in all required fields", "කරුණාකර අවශ්‍ය සියලුම ක්ෂේත්‍ර පුරවන්න"));
       return;
     }
 
@@ -256,14 +434,14 @@ const HelpPage = () => {
     try {
       const response = await axios.post('/help/help-requests', formData);
       if (response.data.success) {
-        alert('Help request submitted successfully!');
+        alert(getTranslation("Help request submitted successfully!", "උදව් ඉල්ලීම සාර්ථකව ඉදිරිපත් කරන ලදී!"));
         resetForm();
         setShowRequestForm(false);
         fetchMyData();
       }
     } catch (error) {
       console.error('Error submitting help request:', error);
-      alert('Error submitting request. Please try again.');
+      alert(getTranslation("Error submitting request. Please try again.", "ඉල්ලීම ඉදිරිපත් කිරීමේ දෝෂයක්. කරුණාකර නැවත උත්සාහ කරන්න."));
     } finally {
       setActionLoading(false);
     }
@@ -276,7 +454,7 @@ const HelpPage = () => {
     try {
       const response = await axios.put(`/help/help-requests/${editingRequest._id}`, formData);
       if (response.data.success) {
-        alert('Help request updated successfully!');
+        alert(getTranslation("Help request updated successfully!", "උදව් ඉල්ලීම සාර්ථකව යාවත්කාලීන කරන ලදී!"));
         setShowEditModal(false);
         setEditingRequest(null);
         resetForm();
@@ -284,14 +462,15 @@ const HelpPage = () => {
       }
     } catch (error) {
       console.error('Error updating help request:', error);
-      alert('Error updating request. Please try again.');
+      alert(getTranslation("Error updating request. Please try again.", "ඉල්ලීම යාවත්කාලීන කිරීමේ දෝෂයක්. කරුණාකර නැවත උත්සාහ කරන්න."));
     } finally {
       setActionLoading(false);
     }
   };
 
   const handleDeleteHelpRequest = async (requestId) => {
-    if (!window.confirm('Are you sure you want to delete this request? This action cannot be undone.')) {
+    const confirmMsg = getTranslation("Are you sure you want to delete this request? This action cannot be undone.", "ඔබට මෙම ඉල්ලීම මැකීමට අවශ්‍ය බව විශ්වාසද? මෙම ක්‍රියාව ආපසු හැරවිය නොහැක.");
+    if (!window.confirm(confirmMsg)) {
       return;
     }
 
@@ -299,19 +478,20 @@ const HelpPage = () => {
     try {
       const response = await axios.delete(`/help/help-requests/${requestId}`);
       if (response.data.success) {
-        alert('Help request deleted successfully!');
+        alert(getTranslation("Help request deleted successfully!", "උදව් ඉල්ලීම සාර්ථකව මකා දමන ලදී!"));
         fetchMyData();
       }
     } catch (error) {
       console.error('Error deleting help request:', error);
-      alert('Error deleting request. Please try again.');
+      alert(getTranslation("Error deleting request. Please try again.", "ඉල්ලීම මැකීමේ දෝෂයක්. කරුණාකර නැවත උත්සාහ කරන්න."));
     } finally {
       setActionLoading(false);
     }
   };
 
   const handleCancelHelpRequest = async (requestId) => {
-    if (!window.confirm('Are you sure you want to cancel this request?')) {
+    const confirmMsg = getTranslation("Are you sure you want to cancel this request?", "ඔබට මෙම ඉල්ලීම අවලංගු කිරීමට අවශ්‍ය බව විශ්වාසද?");
+    if (!window.confirm(confirmMsg)) {
       return;
     }
 
@@ -319,31 +499,32 @@ const HelpPage = () => {
     try {
       const response = await axios.put(`/help/help-requests/${requestId}/cancel`);
       if (response.data.success) {
-        alert('Help request cancelled successfully!');
+        alert(getTranslation("Help request cancelled successfully!", "උදව් ඉල්ලීම සාර්ථකව අවලංගු කරන ලදී!"));
         fetchMyData();
       }
     } catch (error) {
       console.error('Error cancelling help request:', error);
-      alert('Error cancelling request. Please try again.');
+      alert(getTranslation("Error cancelling request. Please try again.", "ඉල්ලීම අවලංගු කිරීමේ දෝෂයක්. කරුණාකර නැවත උත්සාහ කරන්න."));
     } finally {
       setActionLoading(false);
     }
   };
 
   const handleAcceptHelpRequest = async (requestId) => {
-    if (!window.confirm('Are you sure you want to accept this help request?')) return;
+    const confirmMsg = getTranslation("Are you sure you want to accept this help request?", "ඔබට මෙම උදව් ඉල්ලීම පිළිගැනීමට අවශ්‍ය බව විශ්වාසද?");
+    if (!window.confirm(confirmMsg)) return;
 
     setActionLoading(true);
     try {
       const response = await axios.put(`/help/help-requests/${requestId}/accept`);
       if (response.data.success) {
-        alert('You have accepted the help request! Please contact the requester.');
+        alert(getTranslation("You have accepted the help request! Please contact the requester.", "ඔබ උදව් ඉල්ලීම පිළිගෙන ඇත! කරුණාකර ඉල්ලන්නා අමතන්න."));
         fetchPublicHelpRequests();
         fetchMyData();
       }
     } catch (error) {
       console.error('Error accepting request:', error);
-      alert('Error accepting request. Please try again.');
+      alert(getTranslation("Error accepting request. Please try again.", "ඉල්ලීම පිළිගැනීමේ දෝෂයක්. කරුණාකර නැවත උත්සාහ කරන්න."));
     } finally {
       setActionLoading(false);
     }
@@ -381,7 +562,7 @@ const HelpPage = () => {
   // Item Functions
   const handleSubmitItem = async () => {
     if (!itemFormData.category || !itemFormData.title || !itemFormData.description || !itemFormData.location) {
-      alert('Please fill in all required fields');
+      alert(getTranslation("Please fill in all required fields", "කරුණාකර අවශ්‍ය සියලුම ක්ෂේත්‍ර පුරවන්න"));
       return;
     }
 
@@ -389,7 +570,7 @@ const HelpPage = () => {
     try {
       const response = await axios.post('/help/items', itemFormData);
       if (response.data.success) {
-        alert('Item listed successfully!');
+        alert(getTranslation("Item listed successfully!", "භාණ්ඩය සාර්ථකව ලැයිස්තුගත කරන ලදී!"));
         resetItemForm();
         setShowGiveForm(false);
         fetchMyData();
@@ -397,7 +578,7 @@ const HelpPage = () => {
       }
     } catch (error) {
       console.error('Error listing item:', error);
-      alert('Error listing item. Please try again.');
+      alert(getTranslation("Error listing item. Please try again.", "භාණ්ඩය ලැයිස්තුගත කිරීමේ දෝෂයක්. කරුණාකර නැවත උත්සාහ කරන්න."));
     } finally {
       setActionLoading(false);
     }
@@ -410,7 +591,7 @@ const HelpPage = () => {
     try {
       const response = await axios.put(`/help/items/${editingItem._id}`, itemFormData);
       if (response.data.success) {
-        alert('Item updated successfully!');
+        alert(getTranslation("Item updated successfully!", "භාණ්ඩය සාර්ථකව යාවත්කාලීන කරන ලදී!"));
         setShowEditModal(false);
         setEditingItem(null);
         resetItemForm();
@@ -419,14 +600,15 @@ const HelpPage = () => {
       }
     } catch (error) {
       console.error('Error updating item:', error);
-      alert('Error updating item. Please try again.');
+      alert(getTranslation("Error updating item. Please try again.", "භාණ්ඩය යාවත්කාලීන කිරීමේ දෝෂයක්. කරුණාකර නැවත උත්සාහ කරන්න."));
     } finally {
       setActionLoading(false);
     }
   };
 
   const handleDeleteItem = async (itemId) => {
-    if (!window.confirm('Are you sure you want to delete this item listing?')) {
+    const confirmMsg = getTranslation("Are you sure you want to delete this item listing?", "ඔබට මෙම භාණ්ඩ ලැයිස්තුගත කිරීම මැකීමට අවශ්‍ය බව විශ්වාසද?");
+    if (!window.confirm(confirmMsg)) {
       return;
     }
 
@@ -434,51 +616,53 @@ const HelpPage = () => {
     try {
       const response = await axios.delete(`/help/items/${itemId}`);
       if (response.data.success) {
-        alert('Item deleted successfully!');
+        alert(getTranslation("Item deleted successfully!", "භාණ්ඩය සාර්ථකව මකා දමන ලදී!"));
         fetchMyData();
         fetchPublicItems();
       }
     } catch (error) {
       console.error('Error deleting item:', error);
-      alert('Error deleting item. Please try again.');
+      alert(getTranslation("Error deleting item. Please try again.", "භාණ්ඩය මැකීමේ දෝෂයක්. කරුණාකර නැවත උත්සාහ කරන්න."));
     } finally {
       setActionLoading(false);
     }
   };
 
   const handleReserveItem = async (itemId) => {
-    if (!window.confirm('Would you like to reserve this item? The owner will be notified.')) return;
+    const confirmMsg = getTranslation("Would you like to reserve this item? The owner will be notified.", "ඔබට මෙම භාණ්ඩය වෙන් කර ගැනීමට අවශ්‍යද? හිමිකරුට දැනුම් දෙනු ඇත.");
+    if (!window.confirm(confirmMsg)) return;
 
     setActionLoading(true);
     try {
       const response = await axios.put(`/help/items/${itemId}/reserve`);
       if (response.data.success) {
-        alert('Item reserved successfully! Please coordinate pickup with the owner.');
+        alert(getTranslation("Item reserved successfully! Please coordinate pickup with the owner.", "භාණ්ඩය සාර්ථකව වෙන් කර ගන්නා ලදී! කරුණාකර හිමිකරු සමඟ භාණ්ඩ ලබාගැනීම සම්බන්ධීකරණය කරන්න."));
         fetchPublicItems();
         fetchMyData();
       }
     } catch (error) {
       console.error('Error reserving item:', error);
-      alert('Error reserving item. Please try again.');
+      alert(getTranslation("Error reserving item. Please try again.", "භාණ්ඩය වෙන් කර ගැනීමේ දෝෂයක්. කරුණාකර නැවත උත්සාහ කරන්න."));
     } finally {
       setActionLoading(false);
     }
   };
 
   const handleCompleteItemExchange = async (itemId, status) => {
-    if (!window.confirm(`Mark this item as ${status}?`)) return;
+    const confirmMsg = getTranslation(`Mark this item as ${status}?`, `${status === 'given' ? 'ලබා දුන්' : 'ලැබුණු'} ලෙස සලකුණු කරන්න?`);
+    if (!window.confirm(confirmMsg)) return;
 
     setActionLoading(true);
     try {
       const response = await axios.put(`/help/items/${itemId}/complete`, { status });
       if (response.data.success) {
-        alert(`Item marked as ${status}!`);
+        alert(getTranslation(`Item marked as ${status}!`, `භාණ්ඩය ${status === 'given' ? 'ලබා දුන්' : 'ලැබුණු'} ලෙස සලකුණු කරන ලදී!`));
         fetchMyData();
         fetchPublicItems();
       }
     } catch (error) {
       console.error('Error completing exchange:', error);
-      alert('Error updating item status. Please try again.');
+      alert(getTranslation("Error updating item status. Please try again.", "භාණ්ඩ තත්වය යාවත්කාලීන කිරීමේ දෝෂයක්. කරුණාකර නැවත උත්සාහ කරන්න."));
     } finally {
       setActionLoading(false);
     }
@@ -547,28 +731,6 @@ const HelpPage = () => {
     });
   };
 
-  // Helper functions
-  const helpTypes = [
-    { id: "food", label: "Food & Groceries", icon: ShoppingBag, color: "bg-green-100 text-green-700", bgColor: "bg-green-500/10" },
-    { id: "medicine", label: "Medicine Pickup", icon: Pill, color: "bg-red-100 text-red-700", bgColor: "bg-red-500/10" },
-    { id: "transport", label: "Transportation", icon: Car, color: "bg-blue-100 text-blue-700", bgColor: "bg-blue-500/10" },
-    { id: "errands", label: "Run Errands", icon: Package, color: "bg-purple-100 text-purple-700", bgColor: "bg-purple-500/10" },
-    { id: "companionship", label: "Companionship", icon: Users, color: "bg-pink-100 text-pink-700", bgColor: "bg-pink-500/10" },
-    { id: "household", label: "Household Help", icon: Home, color: "bg-orange-100 text-orange-700", bgColor: "bg-orange-500/10" },
-    { id: "other", label: "Other Help", icon: Heart, color: "bg-gray-100 text-gray-700", bgColor: "bg-gray-500/10" },
-  ];
-
-  const itemCategories = [
-    { id: "clothing", label: "Clothing", icon: ShoppingBag },
-    { id: "furniture", label: "Furniture", icon: Home },
-    { id: "electronics", label: "Electronics", icon: Package },
-    { id: "books", label: "Books", icon: Package },
-    { id: "kitchen", label: "Kitchen Items", icon: Package },
-    { id: "medical", label: "Medical Equipment", icon: Pill },
-    { id: "mobility", label: "Mobility Aids", icon: Heart },
-    { id: "other", label: "Other", icon: Gift },
-  ];
-
   const getUrgencyColor = (urgency) => {
     switch (urgency) {
       case "urgent": return "bg-red-100 text-red-700 border-red-300";
@@ -632,13 +794,17 @@ const HelpPage = () => {
     });
   };
 
+  const getPageOfText = (page, pages) => {
+    return getTranslation(`Page ${page} of ${pages}`, `පිටුව ${page} / ${pages}`);
+  };
+
   const getSafeUser = (user) => {
     return user || {
       _id: 'unknown',
-      firstName: 'Unknown',
-      lastName: 'User',
+      firstName: getTranslation("Unknown", "නොදන්නා"),
+      lastName: getTranslation("User", "පරිශීලක"),
       profilePhoto: null,
-      city: 'Unknown',
+      city: getTranslation("Unknown", "නොදන්නා"),
       state: ''
     };
   };
@@ -652,7 +818,7 @@ const HelpPage = () => {
           <div className="flex-1 bg-gradient-to-br from-gray-50 to-blue-50 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center">
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-              <p className="mt-4 text-gray-600 dark:text-gray-400">Loading help system...</p>
+              <p className="mt-4 text-gray-600 dark:text-gray-400">{getLoadingText()}</p>
             </div>
           </div>
         </div>
@@ -674,10 +840,10 @@ const HelpPage = () => {
             {/* Header */}
             <div className="mb-8">
               <h1 className="text-3xl font-bold text-gray-900 dark:text-white bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                Community Help & Support
+                {getCommunityHelpTitle()}
               </h1>
               <p className="text-gray-600 dark:text-gray-400 mt-2">
-                Request help, give items, or volunteer to support fellow seniors
+                {getCommunityHelpSubtitle()}
               </p>
             </div>
 
@@ -685,10 +851,10 @@ const HelpPage = () => {
             <div className="mb-6">
               <div className="flex space-x-1 bg-white dark:bg-gray-800 rounded-xl p-1 shadow-sm border border-gray-200 dark:border-gray-700">
                 {[
-                  { id: 'request', label: 'Request Help', icon: Heart },
-                  { id: 'give', label: 'Give Items', icon: Gift },
-                  { id: 'volunteer', label: 'Volunteer', icon: Users },
-                  { id: 'myRequests', label: 'My Activities', icon: Clock },
+                  { id: 'request', label: getRequestHelp(), icon: Heart },
+                  { id: 'give', label: getGiveItems(), icon: Gift },
+                  { id: 'volunteer', label: getVolunteer(), icon: Users },
+                  { id: 'myRequests', label: getMyActivities(), icon: Clock },
                 ].map((tab) => (
                   <button
                     key={tab.id}
@@ -706,7 +872,7 @@ const HelpPage = () => {
               </div>
             </div>
 
-            {/* REQUEST HELP TAB */}
+            {/* ==================== REQUEST HELP TAB ==================== */}
             {activeTab === 'request' && (
               <div className="space-y-6">
                 {!showRequestForm ? (
@@ -718,10 +884,10 @@ const HelpPage = () => {
                           <div>
                             <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
                               <Heart className="h-8 w-8 text-red-600" />
-                              Request Help from Community
+                              {getRequestHelpTitle()}
                             </h2>
                             <p className="text-gray-600 dark:text-gray-400 mt-2">
-                              Our volunteers are ready to assist with your daily needs
+                              {getRequestHelpSubtitle()}
                             </p>
                           </div>
                           <button
@@ -729,7 +895,7 @@ const HelpPage = () => {
                             className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all flex items-center space-x-2"
                           >
                             <Plus className="h-5 w-5" />
-                            <span>New Help Request</span>
+                            <span>{getNewHelpRequest()}</span>
                           </button>
                         </div>
                       </div>
@@ -750,7 +916,7 @@ const HelpPage = () => {
                               </div>
                               <h3 className="font-bold text-gray-900 dark:text-white text-lg">{type.label}</h3>
                               <p className="text-gray-600 dark:text-gray-400 text-sm mt-1">
-                                Click to request help
+                                {getClickToRequest()}
                               </p>
                             </div>
                           ))}
@@ -763,7 +929,7 @@ const HelpPage = () => {
                       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
                         <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center">
                           <Clock className="h-6 w-6 text-blue-600 mr-2" />
-                          My Active Requests
+                          {getMyActiveRequests()}
                         </h3>
                         <div className="space-y-4">
                           {myHelpRequests
@@ -798,7 +964,7 @@ const HelpPage = () => {
                                       {request.volunteer && (
                                         <div className="flex items-center gap-1">
                                           <Users className="h-4 w-4" />
-                                          Volunteer: {request.volunteer.firstName}
+                                          {getVolunteer()}: {request.volunteer.firstName}
                                         </div>
                                       )}
                                     </div>
@@ -807,7 +973,7 @@ const HelpPage = () => {
                                     <button
                                       onClick={() => handleViewRequest(request._id)}
                                       className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
-                                      title="View Details"
+                                      title={getViewDetails()}
                                     >
                                       <Eye className="h-5 w-5" />
                                     </button>
@@ -816,14 +982,14 @@ const HelpPage = () => {
                                         <button
                                           onClick={() => handleEditRequest(request)}
                                           className="p-2 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/30 rounded-lg transition-colors"
-                                          title="Edit Request"
+                                          title={getEditRequest()}
                                         >
                                           <Edit className="h-5 w-5" />
                                         </button>
                                         <button
                                           onClick={() => handleDeleteHelpRequest(request._id)}
                                           className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
-                                          title="Delete Request"
+                                          title={getDeleteRequest()}
                                         >
                                           <Trash2 className="h-5 w-5" />
                                         </button>
@@ -833,7 +999,7 @@ const HelpPage = () => {
                                       <button
                                         onClick={() => handleCancelHelpRequest(request._id)}
                                         className="p-2 text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-900/30 rounded-lg transition-colors"
-                                        title="Cancel Request"
+                                        title={getCancelRequest()}
                                       >
                                         <XCircle className="h-5 w-5" />
                                       </button>
@@ -857,19 +1023,19 @@ const HelpPage = () => {
                         }}
                         className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium flex items-center gap-2"
                       >
-                        ← Back to Help Types
+                        {getBackToHelpTypes()}
                       </button>
                     </div>
 
                     <div className="max-w-2xl mx-auto">
                       <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
-                        New Help Request
+                        {getNewHelpRequest()}
                       </h2>
 
                       <div className="space-y-6">
                         <div>
                           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            What type of help do you need? *
+                            {getWhatTypeOfHelp()}
                           </label>
                           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                             {helpTypes.map((type) => (
@@ -894,27 +1060,27 @@ const HelpPage = () => {
 
                         <div>
                           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Title *
+                            {getTitle()}
                           </label>
                           <input
                             type="text"
                             name="title"
                             value={formData.title}
                             onChange={handleInputChange}
-                            placeholder="Brief title for your request"
+                            placeholder={getBriefTitle()}
                             className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                           />
                         </div>
 
                         <div>
                           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Description *
+                            {getDescription()}
                           </label>
                           <textarea
                             name="description"
                             value={formData.description}
                             onChange={handleInputChange}
-                            placeholder="Please describe what you need help with in detail..."
+                            placeholder={getDescribeHelp()}
                             rows={4}
                             className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                           />
@@ -923,21 +1089,21 @@ const HelpPage = () => {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                           <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                              Location *
+                              {getLocation()}
                             </label>
                             <input
                               type="text"
                               name="location"
                               value={formData.location}
                               onChange={handleInputChange}
-                              placeholder="Where do you need help?"
+                              placeholder={getWhereNeedHelp()}
                               className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             />
                           </div>
 
                           <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                              Urgency Level
+                              {getUrgencyLevel()}
                             </label>
                             <select
                               name="urgency"
@@ -945,10 +1111,10 @@ const HelpPage = () => {
                               onChange={handleInputChange}
                               className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             >
-                              <option value="low">Low</option>
-                              <option value="medium">Medium</option>
-                              <option value="high">High</option>
-                              <option value="urgent">Urgent</option>
+                              <option value="low">{getLow()}</option>
+                              <option value="medium">{getMedium()}</option>
+                              <option value="high">{getHigh()}</option>
+                              <option value="urgent">{getUrgent()}</option>
                             </select>
                           </div>
                         </div>
@@ -956,7 +1122,7 @@ const HelpPage = () => {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                           <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                              Scheduled Date (Optional)
+                              {getScheduledDate()}
                             </label>
                             <input
                               type="datetime-local"
@@ -969,7 +1135,7 @@ const HelpPage = () => {
 
                           <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                              Estimated Hours (Optional)
+                              {getEstimatedHours()}
                             </label>
                             <input
                               type="number"
@@ -991,10 +1157,10 @@ const HelpPage = () => {
                             {actionLoading ? (
                               <>
                                 <Loader className="h-5 w-5 animate-spin" />
-                                Submitting...
+                                {getSubmitting()}
                               </>
                             ) : (
-                              'Submit Help Request'
+                              getSubmitHelpRequest()
                             )}
                           </button>
                           <button
@@ -1004,7 +1170,7 @@ const HelpPage = () => {
                             }}
                             className="px-6 py-3 border border-gray-300 dark:border-gray-600 rounded-xl font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                           >
-                            Cancel
+                            {getCancel()}
                           </button>
                         </div>
                       </div>
@@ -1014,7 +1180,7 @@ const HelpPage = () => {
               </div>
             )}
 
-            {/* VOLUNTEER TAB */}
+            {/* ==================== VOLUNTEER TAB ==================== */}
             {activeTab === 'volunteer' && (
               <div className="space-y-6">
                 <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-8">
@@ -1022,10 +1188,10 @@ const HelpPage = () => {
                     <div>
                       <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
                         <Users className="h-8 w-8 text-blue-600" />
-                        Volunteer Opportunities
+                        {getVolunteerOpportunities()}
                       </h2>
                       <p className="text-gray-600 dark:text-gray-400 mt-2">
-                        Help fellow seniors in your community
+                        {getHelpFellowSeniors()}
                       </p>
                     </div>
                     <button
@@ -1033,7 +1199,7 @@ const HelpPage = () => {
                       className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700"
                     >
                       <Filter className="h-4 w-4" />
-                      Filters
+                      {getFilters()}
                     </button>
                   </div>
 
@@ -1043,20 +1209,20 @@ const HelpPage = () => {
                       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                         <div>
                           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Search
+                            {getSearch()}
                           </label>
                           <input
                             type="text"
                             name="search"
                             value={filters.search}
                             onChange={handleFilterChange}
-                            placeholder="Search requests..."
+                            placeholder={getSearchRequests()}
                             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 rounded-lg"
                           />
                         </div>
                         <div>
                           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Type
+                            {getType()}
                           </label>
                           <select
                             name="type"
@@ -1064,7 +1230,7 @@ const HelpPage = () => {
                             onChange={handleFilterChange}
                             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 rounded-lg"
                           >
-                            <option value="">All Types</option>
+                            <option value="">{getAllTypes()}</option>
                             {helpTypes.map(type => (
                               <option key={type.id} value={type.id}>{type.label}</option>
                             ))}
@@ -1072,7 +1238,7 @@ const HelpPage = () => {
                         </div>
                         <div>
                           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Urgency
+                            {getUrgency()}
                           </label>
                           <select
                             name="urgency"
@@ -1080,23 +1246,23 @@ const HelpPage = () => {
                             onChange={handleFilterChange}
                             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 rounded-lg"
                           >
-                            <option value="">All Urgency</option>
-                            <option value="low">Low</option>
-                            <option value="medium">Medium</option>
-                            <option value="high">High</option>
-                            <option value="urgent">Urgent</option>
+                            <option value="">{getAllUrgency()}</option>
+                            <option value="low">{getLow()}</option>
+                            <option value="medium">{getMedium()}</option>
+                            <option value="high">{getHigh()}</option>
+                            <option value="urgent">{getUrgent()}</option>
                           </select>
                         </div>
                         <div>
                           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Location
+                            {getLocation()}
                           </label>
                           <input
                             type="text"
                             name="location"
                             value={filters.location}
                             onChange={handleFilterChange}
-                            placeholder="Filter by location"
+                            placeholder={getFilterByLocation()}
                             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 rounded-lg"
                           />
                         </div>
@@ -1106,7 +1272,7 @@ const HelpPage = () => {
                           onClick={clearFilters}
                           className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
                         >
-                          Clear Filters
+                          {getClearFilters()}
                         </button>
                       </div>
                     </div>
@@ -1165,7 +1331,7 @@ const HelpPage = () => {
                                     className="flex-1 py-2 border border-blue-600 text-blue-600 rounded-lg font-medium hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors flex items-center justify-center gap-2"
                                   >
                                     <Eye className="h-4 w-4" />
-                                    View Details
+                                    {getViewDetails()}
                                   </button>
                                   <button
                                     onClick={() => handleAcceptHelpRequest(request._id)}
@@ -1177,7 +1343,7 @@ const HelpPage = () => {
                                     ) : (
                                       <>
                                         <Heart className="h-4 w-4" />
-                                        Accept
+                                        {getAccept()}
                                       </>
                                     )}
                                   </button>
@@ -1191,12 +1357,12 @@ const HelpPage = () => {
                   ) : (
                     <div className="text-center py-12 bg-gray-50 dark:bg-gray-700 rounded-xl">
                       <Users className="h-12 w-12 text-gray-400 dark:text-gray-500 mx-auto mb-3" />
-                      <p className="text-gray-600 dark:text-gray-400">No help requests match your filters.</p>
+                      <p className="text-gray-600 dark:text-gray-400">{getNoRequestsMatch()}</p>
                       <button
                         onClick={clearFilters}
                         className="mt-4 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium"
                       >
-                        Clear Filters
+                        {getClearFilters()}
                       </button>
                     </div>
                   )}
@@ -1209,17 +1375,17 @@ const HelpPage = () => {
                         disabled={pagination.page === 1}
                         className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700"
                       >
-                        Previous
+                        {getPrevious()}
                       </button>
                       <span className="px-4 py-2 text-gray-700 dark:text-gray-300">
-                        Page {pagination.page} of {pagination.pages}
+                        {getPageOfText(pagination.page, pagination.pages)}
                       </span>
                       <button
                         onClick={() => setPagination(prev => ({ ...prev, page: prev.page + 1 }))}
                         disabled={pagination.page === pagination.pages}
                         className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700"
                       >
-                        Next
+                        {getNext()}
                       </button>
                     </div>
                   )}
@@ -1227,7 +1393,7 @@ const HelpPage = () => {
               </div>
             )}
 
-            {/* GIVE ITEMS TAB */}
+            {/* ==================== GIVE ITEMS TAB ==================== */}
             {activeTab === 'give' && (
               <div className="space-y-6">
                 {!showGiveForm ? (
@@ -1239,10 +1405,10 @@ const HelpPage = () => {
                           <div>
                             <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
                               <Gift className="h-8 w-8 text-green-600" />
-                              Give Items to Community
+                              {getGiveItemsTitle()}
                             </h2>
                             <p className="text-gray-600 dark:text-gray-400 mt-2">
-                              Share items you no longer need with fellow seniors
+                              {getGiveItemsSubtitle()}
                             </p>
                           </div>
                           <button
@@ -1250,14 +1416,14 @@ const HelpPage = () => {
                             className="px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all flex items-center space-x-2"
                           >
                             <Plus className="h-5 w-5" />
-                            <span>List New Item</span>
+                            <span>{getListNewItem()}</span>
                           </button>
                         </div>
                       </div>
 
                       {/* Quick Categories */}
                       <div className="p-8 border-t border-gray-200 dark:border-gray-700">
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Popular Categories</h3>
+                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">{getPopularCategories()}</h3>
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                           {itemCategories.slice(0, 4).map((category) => (
                             <button
@@ -1281,14 +1447,14 @@ const HelpPage = () => {
                       <div className="flex items-center justify-between mb-6">
                         <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
                           <Package className="h-6 w-6 text-green-600" />
-                          Available Items
+                          {getAvailableItems()}
                         </h3>
                         <button
                           onClick={() => setShowFilters(!showFilters)}
                           className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700"
                         >
                           <Filter className="h-4 w-4" />
-                          Filter Items
+                          {getFilterItems()}
                         </button>
                       </div>
 
@@ -1298,20 +1464,20 @@ const HelpPage = () => {
                           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                             <div>
                               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                Search
+                                {getSearch()}
                               </label>
                               <input
                                 type="text"
                                 name="search"
                                 value={filters.search}
                                 onChange={handleFilterChange}
-                                placeholder="Search items..."
+                                placeholder={getSearchItems()}
                                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 rounded-lg"
                               />
                             </div>
                             <div>
                               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                Category
+                                {getCategory()}
                               </label>
                               <select
                                 name="category"
@@ -1319,7 +1485,7 @@ const HelpPage = () => {
                                 onChange={handleFilterChange}
                                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 rounded-lg"
                               >
-                                <option value="">All Categories</option>
+                                <option value="">{getAllCategories()}</option>
                                 {itemCategories.map(cat => (
                                   <option key={cat.id} value={cat.id}>{cat.label}</option>
                                 ))}
@@ -1327,7 +1493,7 @@ const HelpPage = () => {
                             </div>
                             <div>
                               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                Condition
+                                {getCondition()}
                               </label>
                               <select
                                 name="condition"
@@ -1335,23 +1501,23 @@ const HelpPage = () => {
                                 onChange={handleFilterChange}
                                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 rounded-lg"
                               >
-                                <option value="">All Conditions</option>
-                                <option value="new">New</option>
-                                <option value="like_new">Like New</option>
-                                <option value="good">Good</option>
-                                <option value="fair">Fair</option>
+                                <option value="">{getAllConditions()}</option>
+                                <option value="new">{getNew()}</option>
+                                <option value="like_new">{getLikeNew()}</option>
+                                <option value="good">{getGood()}</option>
+                                <option value="fair">{getFair()}</option>
                               </select>
                             </div>
                             <div>
                               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                Location
+                                {getLocation()}
                               </label>
                               <input
                                 type="text"
                                 name="location"
                                 value={filters.location}
                                 onChange={handleFilterChange}
-                                placeholder="Filter by location"
+                                placeholder={getFilterByLocation()}
                                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 rounded-lg"
                               />
                             </div>
@@ -1361,7 +1527,7 @@ const HelpPage = () => {
                               onClick={clearFilters}
                               className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
                             >
-                              Clear Filters
+                              {getClearFilters()}
                             </button>
                           </div>
                         </div>
@@ -1391,7 +1557,7 @@ const HelpPage = () => {
                                       {item.condition.replace('_', ' ').toUpperCase()}
                                     </span>
                                     <span className="text-xs text-gray-500 dark:text-gray-400">
-                                      Qty: {item.quantity}
+                                      {getQuantity()}: {item.quantity}
                                     </span>
                                   </div>
                                   <h4 className="font-bold text-gray-900 dark:text-white mb-1">{item.title}</h4>
@@ -1426,7 +1592,7 @@ const HelpPage = () => {
                                         disabled={actionLoading}
                                         className="px-3 py-1 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
                                       >
-                                        Reserve
+                                        {getReserve()}
                                       </button>
                                     )}
                                     {item.user?._id === currentUser?.id && (
@@ -1434,12 +1600,14 @@ const HelpPage = () => {
                                         <button
                                           onClick={() => handleEditItem(item)}
                                           className="p-1 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded"
+                                          title={getEdit()}
                                         >
                                           <Edit className="h-4 w-4" />
                                         </button>
                                         <button
                                           onClick={() => handleDeleteItem(item._id)}
                                           className="p-1 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded"
+                                          title={getDelete()}
                                         >
                                           <Trash2 className="h-4 w-4" />
                                         </button>
@@ -1448,7 +1616,7 @@ const HelpPage = () => {
                                     <button
                                       onClick={() => handleViewItem(item._id)}
                                       className="p-1 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
-                                      title="View Details"
+                                      title={getViewDetails()}
                                     >
                                       <Eye className="h-4 w-4" />
                                     </button>
@@ -1469,12 +1637,12 @@ const HelpPage = () => {
                       ) : (
                         <div className="text-center py-12 bg-gray-50 dark:bg-gray-700 rounded-xl">
                           <Package className="h-12 w-12 text-gray-400 dark:text-gray-500 mx-auto mb-3" />
-                          <p className="text-gray-600 dark:text-gray-400">No items available at the moment.</p>
+                          <p className="text-gray-600 dark:text-gray-400">{getNoItemsAvailable()}</p>
                           <button
                             onClick={() => setShowGiveForm(true)}
                             className="mt-4 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
                           >
-                            List Your First Item
+                            {getListFirstItem()}
                           </button>
                         </div>
                       )}
@@ -1487,17 +1655,17 @@ const HelpPage = () => {
                             disabled={itemPagination.page === 1}
                             className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700"
                           >
-                            Previous
+                            {getPrevious()}
                           </button>
                           <span className="px-4 py-2 text-gray-700 dark:text-gray-300">
-                            Page {itemPagination.page} of {itemPagination.pages}
+                            {getPageOfText(itemPagination.page, itemPagination.pages)}
                           </span>
                           <button
                             onClick={() => setItemPagination(prev => ({ ...prev, page: prev.page + 1 }))}
                             disabled={itemPagination.page === itemPagination.pages}
                             className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700"
                           >
-                            Next
+                            {getNext()}
                           </button>
                         </div>
                       )}
@@ -1514,19 +1682,19 @@ const HelpPage = () => {
                         }}
                         className="text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-300 font-medium flex items-center gap-2"
                       >
-                        ← Back to Items
+                        {getBackToItems()}
                       </button>
                     </div>
 
                     <div className="max-w-2xl mx-auto">
                       <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
-                        List an Item to Give
+                        {getListItemTitle()}
                       </h2>
 
                       <div className="space-y-6">
                         <div>
                           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Category *
+                            {getCategory()}
                           </label>
                           <select
                             name="category"
@@ -1534,7 +1702,7 @@ const HelpPage = () => {
                             onChange={handleItemInputChange}
                             className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
                           >
-                            <option value="">Select a category</option>
+                            <option value="">{getSelectCategory()}</option>
                             {itemCategories.map(cat => (
                               <option key={cat.id} value={cat.id}>{cat.label}</option>
                             ))}
@@ -1543,27 +1711,27 @@ const HelpPage = () => {
 
                         <div>
                           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Title *
+                            {getItemTitle()}
                           </label>
                           <input
                             type="text"
                             name="title"
                             value={itemFormData.title}
                             onChange={handleItemInputChange}
-                            placeholder="e.g., Walking Cane, Winter Coat"
+                            placeholder={getItemTitlePlaceholder()}
                             className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
                           />
                         </div>
 
                         <div>
                           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Description *
+                            {getItemDescription()}
                           </label>
                           <textarea
                             name="description"
                             value={itemFormData.description}
                             onChange={handleItemInputChange}
-                            placeholder="Describe the item, its condition, and any important details..."
+                            placeholder={getItemDescriptionPlaceholder()}
                             rows={4}
                             className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
                           />
@@ -1572,7 +1740,7 @@ const HelpPage = () => {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                           <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                              Condition *
+                              {getItemCondition()}
                             </label>
                             <select
                               name="condition"
@@ -1580,17 +1748,17 @@ const HelpPage = () => {
                               onChange={handleItemInputChange}
                               className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
                             >
-                              <option value="new">New</option>
-                              <option value="like_new">Like New</option>
-                              <option value="good">Good</option>
-                              <option value="fair">Fair</option>
+                              <option value="new">{getNew()}</option>
+                              <option value="like_new">{getLikeNew()}</option>
+                              <option value="good">{getGood()}</option>
+                              <option value="fair">{getFair()}</option>
                               <option value="poor">Poor (Free only)</option>
                             </select>
                           </div>
 
                           <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                              Quantity *
+                              {getQuantity()}
                             </label>
                             <input
                               type="number"
@@ -1605,28 +1773,28 @@ const HelpPage = () => {
 
                         <div>
                           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Location *
+                            {getItemLocation()}
                           </label>
                           <input
                             type="text"
                             name="location"
                             value={itemFormData.location}
                             onChange={handleItemInputChange}
-                            placeholder="City or neighborhood"
+                            placeholder={getCityNeighborhood()}
                             className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
                           />
                         </div>
 
                         <div>
                           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Pickup Location (Optional)
+                            {getPickupLocation()}
                           </label>
                           <input
                             type="text"
                             name="pickupLocation"
                             value={itemFormData.pickupLocation}
                             onChange={handleItemInputChange}
-                            placeholder="Specific pickup address or meetup point"
+                            placeholder={getPickupLocationPlaceholder()}
                             className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
                           />
                         </div>
@@ -1634,7 +1802,7 @@ const HelpPage = () => {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                           <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                              Expiry Date (Optional)
+                              {getExpiryDate()}
                             </label>
                             <input
                               type="date"
@@ -1647,7 +1815,7 @@ const HelpPage = () => {
 
                           <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                              Preferred Contact Method
+                              {getContactMethod()}
                             </label>
                             <select
                               name="contactMethod"
@@ -1655,9 +1823,9 @@ const HelpPage = () => {
                               onChange={handleItemInputChange}
                               className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
                             >
-                              <option value="chat">In-app Chat</option>
-                              <option value="phone">Phone</option>
-                              <option value="email">Email</option>
+                              <option value="chat">{getInAppChat()}</option>
+                              <option value="phone">{getPhone()}</option>
+                              <option value="email">{getEmail()}</option>
                             </select>
                           </div>
                         </div>
@@ -1671,10 +1839,10 @@ const HelpPage = () => {
                             {actionLoading ? (
                               <>
                                 <Loader className="h-5 w-5 animate-spin" />
-                                Listing...
+                                {getListing()}
                               </>
                             ) : (
-                              'List Item'
+                              getListItem()
                             )}
                           </button>
                           <button
@@ -1684,7 +1852,7 @@ const HelpPage = () => {
                             }}
                             className="px-6 py-3 border border-gray-300 dark:border-gray-600 rounded-xl font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                           >
-                            Cancel
+                            {getCancel()}
                           </button>
                         </div>
                       </div>
@@ -1694,14 +1862,14 @@ const HelpPage = () => {
               </div>
             )}
 
-            {/* MY ACTIVITIES TAB */}
+            {/* ==================== MY ACTIVITIES TAB ==================== */}
             {activeTab === 'myRequests' && (
               <div className="space-y-6">
                 {/* My Help Requests */}
                 <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
                   <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center">
                     <Heart className="h-6 w-6 text-red-600 mr-2" />
-                    My Help Requests
+                    {getMyHelpRequests()}
                   </h3>
                   {myHelpRequests.length > 0 ? (
                     <div className="space-y-4">
@@ -1735,11 +1903,11 @@ const HelpPage = () => {
                               </div>
                               {request.volunteer && (
                                 <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
-                                  <p className="text-sm font-medium text-blue-800 dark:text-blue-400">Volunteer Assigned:</p>
+                                  <p className="text-sm font-medium text-blue-800 dark:text-blue-400">{getVolunteerAssigned()}</p>
                                   <div className="flex items-center gap-3 mt-2">
                                     <img
                                       src={request.volunteer?.profilePhoto || '/default-avatar.png'}
-                                      alt={request.volunteer?.firstName || 'Volunteer'}
+                                      alt={request.volunteer?.firstName || getVolunteer()}
                                       className="h-8 w-8 rounded-full object-cover"
                                       onError={(e) => {
                                         e.target.src = '/default-avatar.png';
@@ -1761,7 +1929,7 @@ const HelpPage = () => {
                               <button
                                 onClick={() => handleViewRequest(request._id)}
                                 className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg"
-                                title="View Details"
+                                title={getViewDetails()}
                               >
                                 <Eye className="h-5 w-5" />
                               </button>
@@ -1770,14 +1938,14 @@ const HelpPage = () => {
                                   <button
                                     onClick={() => handleEditRequest(request)}
                                     className="p-2 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/30 rounded-lg"
-                                    title="Edit Request"
+                                    title={getEditRequest()}
                                   >
                                     <Edit className="h-5 w-5" />
                                   </button>
                                   <button
                                     onClick={() => handleDeleteHelpRequest(request._id)}
                                     className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg"
-                                    title="Delete Request"
+                                    title={getDeleteRequest()}
                                   >
                                     <Trash2 className="h-5 w-5" />
                                   </button>
@@ -1787,7 +1955,7 @@ const HelpPage = () => {
                                 <button
                                   onClick={() => handleCancelHelpRequest(request._id)}
                                   className="p-2 text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-900/30 rounded-lg"
-                                  title="Cancel Request"
+                                  title={getCancelRequest()}
                                 >
                                   <XCircle className="h-5 w-5" />
                                 </button>
@@ -1798,7 +1966,7 @@ const HelpPage = () => {
                       ))}
                     </div>
                   ) : (
-                    <p className="text-gray-500 dark:text-gray-400 text-center py-8">No help requests yet</p>
+                    <p className="text-gray-500 dark:text-gray-400 text-center py-8">{getNoHelpRequests()}</p>
                   )}
                 </div>
 
@@ -1807,7 +1975,7 @@ const HelpPage = () => {
                   <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
                     <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center">
                       <Users className="h-6 w-6 text-blue-600 mr-2" />
-                      I'm Volunteering For
+                      {getImVolunteeringFor()}
                     </h3>
                     <div className="space-y-4">
                       {myVolunteering.map((request) => {
@@ -1838,7 +2006,7 @@ const HelpPage = () => {
                                   </div>
                                 </div>
                                 <div className="mt-3 p-3 bg-purple-50 dark:bg-purple-900/30 rounded-lg">
-                                  <p className="text-sm font-medium text-purple-800 dark:text-purple-400">Requester:</p>
+                                  <p className="text-sm font-medium text-purple-800 dark:text-purple-400">{getRequester()}</p>
                                   <div className="flex items-center gap-3 mt-2">
                                     <img
                                       src={user.profilePhoto || '/default-avatar.png'}
@@ -1862,7 +2030,7 @@ const HelpPage = () => {
                               <button
                                 onClick={() => handleViewRequest(request._id)}
                                 className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg"
-                                title="View Details"
+                                title={getViewDetails()}
                               >
                                 <Eye className="h-5 w-5" />
                               </button>
@@ -1879,7 +2047,7 @@ const HelpPage = () => {
                   <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
                     <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center">
                       <Gift className="h-6 w-6 text-green-600 mr-2" />
-                      My Item Listings
+                      {getMyItemListings()}
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {myItems.map((item) => (
@@ -1903,12 +2071,12 @@ const HelpPage = () => {
                                 </div>
                                 <div className="flex items-center gap-1">
                                   <Package className="h-4 w-4" />
-                                  Qty: {item.quantity}
+                                  {getQuantity()}: {item.quantity}
                                 </div>
                               </div>
                               {item.receiver && (
                                 <div className="mt-3 p-3 bg-green-50 dark:bg-green-900/30 rounded-lg">
-                                  <p className="text-sm font-medium text-green-800 dark:text-green-400">Reserved by:</p>
+                                  <p className="text-sm font-medium text-green-800 dark:text-green-400">{getReservedBy()}</p>
                                   <div className="flex items-center gap-3 mt-2">
                                     <img
                                       src={item.receiver?.profilePhoto || '/default-avatar.png'}
@@ -1931,7 +2099,7 @@ const HelpPage = () => {
                               <button
                                 onClick={() => handleViewItem(item._id)}
                                 className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg"
-                                title="View Details"
+                                title={getViewDetails()}
                               >
                                 <Eye className="h-5 w-5" />
                               </button>
@@ -1940,14 +2108,14 @@ const HelpPage = () => {
                                   <button
                                     onClick={() => handleEditItem(item)}
                                     className="p-2 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/30 rounded-lg"
-                                    title="Edit Item"
+                                    title={getEdit()}
                                   >
                                     <Edit className="h-5 w-5" />
                                   </button>
                                   <button
                                     onClick={() => handleDeleteItem(item._id)}
                                     className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg"
-                                    title="Delete Item"
+                                    title={getDelete()}
                                   >
                                     <Trash2 className="h-5 w-5" />
                                   </button>
@@ -1958,14 +2126,14 @@ const HelpPage = () => {
                                   <button
                                     onClick={() => handleCompleteItemExchange(item._id, 'given')}
                                     className="p-2 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/30 rounded-lg"
-                                    title="Mark as Given"
+                                    title={getMarkAsGiven()}
                                   >
                                     <PackageCheck className="h-5 w-5" />
                                   </button>
                                   <button
                                     onClick={() => handleDeleteItem(item._id)}
                                     className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg"
-                                    title="Cancel"
+                                    title={getCancel()}
                                   >
                                     <XCircle className="h-5 w-5" />
                                   </button>
@@ -1982,26 +2150,26 @@ const HelpPage = () => {
                 {myHelpRequests.length === 0 && myVolunteering.length === 0 && myItems.length === 0 && (
                   <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-12 text-center">
                     <Clock className="h-16 w-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
-                    <h3 className="text-xl font-bold text-gray-700 dark:text-gray-300 mb-2">No Activities Yet</h3>
-                    <p className="text-gray-500 dark:text-gray-400 mb-6">Start by requesting help, listing items, or volunteering!</p>
+                    <h3 className="text-xl font-bold text-gray-700 dark:text-gray-300 mb-2">{getNoActivitiesYet()}</h3>
+                    <p className="text-gray-500 dark:text-gray-400 mb-6">{getStartActivities()}</p>
                     <div className="flex justify-center gap-4">
                       <button
                         onClick={() => setActiveTab('request')}
                         className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                       >
-                        Request Help
+                        {getRequestHelp()}
                       </button>
                       <button
                         onClick={() => setActiveTab('give')}
                         className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
                       >
-                        Give Items
+                        {getGiveItems()}
                       </button>
                       <button
                         onClick={() => setActiveTab('volunteer')}
                         className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
                       >
-                        Volunteer
+                        {getVolunteer()}
                       </button>
                     </div>
                   </div>
@@ -2012,13 +2180,13 @@ const HelpPage = () => {
         </div>
       </div>
 
-      {/* View Request Modal */}
+      {/* ==================== VIEW REQUEST MODAL ==================== */}
       {showViewModal && selectedRequest && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-gray-200 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800">
               <div className="flex items-center justify-between">
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white">Help Request Details</h3>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white">{getHelpRequestDetails()}</h3>
                 <button
                   onClick={() => {
                     setShowViewModal(false);
@@ -2074,29 +2242,29 @@ const HelpPage = () => {
                 </div>
                 <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
                   <Clock className="h-5 w-5" />
-                  <span>Created: {formatDate(selectedRequest.createdAt)}</span>
+                  <span>{getCreated()} {formatDate(selectedRequest.createdAt)}</span>
                 </div>
                 {selectedRequest.scheduledDate && (
                   <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
                     <Calendar className="h-5 w-5" />
-                    <span>Scheduled: {formatDate(selectedRequest.scheduledDate)}</span>
+                    <span>{getScheduled()} {formatDate(selectedRequest.scheduledDate)}</span>
                   </div>
                 )}
                 {selectedRequest.estimatedHours && (
                   <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
                     <Clock className="h-5 w-5" />
-                    <span>Estimated: {selectedRequest.estimatedHours} hours</span>
+                    <span>{getEstimated()} {selectedRequest.estimatedHours} {getEstimatedHours().toLowerCase()}</span>
                   </div>
                 )}
               </div>
 
               {selectedRequest.volunteer && (
                 <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
-                  <h5 className="font-bold text-gray-900 dark:text-white mb-3">Volunteer Information</h5>
+                  <h5 className="font-bold text-gray-900 dark:text-white mb-3">{getVolunteerInformation()}</h5>
                   <div className="flex items-center gap-4">
                     <img
                       src={selectedRequest.volunteer?.profilePhoto || '/default-avatar.png'}
-                      alt={selectedRequest.volunteer?.firstName || 'Volunteer'}
+                      alt={selectedRequest.volunteer?.firstName || getVolunteer()}
                       className="h-12 w-12 rounded-full object-cover"
                       onError={(e) => {
                         e.target.src = '/default-avatar.png';
@@ -2134,7 +2302,7 @@ const HelpPage = () => {
                       className="flex-1 py-3 bg-green-600 text-white rounded-xl font-semibold hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
                     >
                       <Edit className="h-5 w-5" />
-                      Edit Request
+                      {getEdit()}
                     </button>
                     <button
                       onClick={() => {
@@ -2144,7 +2312,7 @@ const HelpPage = () => {
                       className="flex-1 py-3 bg-red-600 text-white rounded-xl font-semibold hover:bg-red-700 transition-colors flex items-center justify-center gap-2"
                     >
                       <Trash2 className="h-5 w-5" />
-                      Delete Request
+                      {getDelete()}
                     </button>
                   </>
                 )}
@@ -2157,7 +2325,7 @@ const HelpPage = () => {
                     className="flex-1 py-3 bg-orange-600 text-white rounded-xl font-semibold hover:bg-orange-700 transition-colors flex items-center justify-center gap-2"
                   >
                     <XCircle className="h-5 w-5" />
-                    Cancel Request
+                    {getCancelRequest()}
                   </button>
                 )}
                 <button
@@ -2167,7 +2335,7 @@ const HelpPage = () => {
                   }}
                   className="flex-1 py-3 border border-gray-300 dark:border-gray-600 rounded-xl font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                 >
-                  Close
+                  {getClose()}
                 </button>
               </div>
             </div>
@@ -2175,13 +2343,13 @@ const HelpPage = () => {
         </div>
       )}
 
-      {/* View Item Modal */}
+      {/* ==================== VIEW ITEM MODAL ==================== */}
       {showItemViewModal && selectedItem && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-gray-200 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800">
               <div className="flex items-center justify-between">
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white">Item Details</h3>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white">{getItemDetails()}</h3>
                 <button
                   onClick={() => {
                     setShowItemViewModal(false);
@@ -2221,7 +2389,7 @@ const HelpPage = () => {
                   {selectedItem.status.toUpperCase()}
                 </span>
                 <span className="px-3 py-1 rounded-full text-sm font-medium bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400">
-                  Qty: {selectedItem.quantity}
+                  {getQuantity()}: {selectedItem.quantity}
                 </span>
               </div>
 
@@ -2237,25 +2405,25 @@ const HelpPage = () => {
                 </div>
                 <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
                   <Clock className="h-5 w-5" />
-                  <span>Listed: {formatDate(selectedItem.createdAt)}</span>
+                  <span>{getListed()} {formatDate(selectedItem.createdAt)}</span>
                 </div>
                 {selectedItem.pickupLocation && (
                   <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400 col-span-2">
                     <Package className="h-5 w-5" />
-                    <span>Pickup: {selectedItem.pickupLocation}</span>
+                    <span>{getPickup()} {selectedItem.pickupLocation}</span>
                   </div>
                 )}
                 {selectedItem.expiryDate && (
                   <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
                     <Calendar className="h-5 w-5" />
-                    <span>Expires: {formatDate(selectedItem.expiryDate)}</span>
+                    <span>{getExpires()} {formatDate(selectedItem.expiryDate)}</span>
                   </div>
                 )}
               </div>
 
               {selectedItem.receiver && (
                 <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
-                  <h5 className="font-bold text-gray-900 dark:text-white mb-3">Receiver Information</h5>
+                  <h5 className="font-bold text-gray-900 dark:text-white mb-3">{getReceiverInformation()}</h5>
                   <div className="flex items-center gap-4">
                     <img
                       src={selectedItem.receiver?.profilePhoto || '/default-avatar.png'}
@@ -2289,7 +2457,7 @@ const HelpPage = () => {
                     ) : (
                       <>
                         <Package className="h-5 w-5" />
-                        Reserve Item
+                        {getReserveItem()}
                       </>
                     )}
                   </button>
@@ -2304,7 +2472,7 @@ const HelpPage = () => {
                       className="flex-1 py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
                     >
                       <Edit className="h-5 w-5" />
-                      Edit Item
+                      {getEdit()}
                     </button>
                     <button
                       onClick={() => {
@@ -2314,7 +2482,7 @@ const HelpPage = () => {
                       className="flex-1 py-3 bg-red-600 text-white rounded-xl font-semibold hover:bg-red-700 transition-colors flex items-center justify-center gap-2"
                     >
                       <Trash2 className="h-5 w-5" />
-                      Delete Item
+                      {getDelete()}
                     </button>
                   </>
                 )}
@@ -2328,7 +2496,7 @@ const HelpPage = () => {
                       className="flex-1 py-3 bg-green-600 text-white rounded-xl font-semibold hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
                     >
                       <PackageCheck className="h-5 w-5" />
-                      Mark as Given
+                      {getMarkAsGiven()}
                     </button>
                     <button
                       onClick={() => {
@@ -2338,7 +2506,7 @@ const HelpPage = () => {
                       className="flex-1 py-3 bg-red-600 text-white rounded-xl font-semibold hover:bg-red-700 transition-colors flex items-center justify-center gap-2"
                     >
                       <XCircle className="h-5 w-5" />
-                      Cancel
+                      {getCancel()}
                     </button>
                   </>
                 )}
@@ -2349,7 +2517,7 @@ const HelpPage = () => {
                   }}
                   className="flex-1 py-3 border border-gray-300 dark:border-gray-600 rounded-xl font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                 >
-                  Close
+                  {getClose()}
                 </button>
               </div>
             </div>
@@ -2357,14 +2525,14 @@ const HelpPage = () => {
         </div>
       )}
 
-      {/* Edit Modal */}
+      {/* ==================== EDIT MODAL ==================== */}
       {showEditModal && (editingRequest || editingItem) && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-gray-200 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800">
               <div className="flex items-center justify-between">
                 <h3 className="text-xl font-bold text-gray-900 dark:text-white">
-                  {editingRequest ? 'Edit Help Request' : 'Edit Item Listing'}
+                  {editingRequest ? getEditHelpRequest() : getEditItemListing()}
                 </h3>
                 <button
                   onClick={() => {
@@ -2387,7 +2555,7 @@ const HelpPage = () => {
                 <div className="space-y-6">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Type *
+                      {getWhatTypeOfHelp()}
                     </label>
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                       {helpTypes.map((type) => (
@@ -2412,7 +2580,7 @@ const HelpPage = () => {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Title *
+                      {getTitle()}
                     </label>
                     <input
                       type="text"
@@ -2425,7 +2593,7 @@ const HelpPage = () => {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Description *
+                      {getDescription()}
                     </label>
                     <textarea
                       name="description"
@@ -2439,7 +2607,7 @@ const HelpPage = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Location *
+                        {getLocation()}
                       </label>
                       <input
                         type="text"
@@ -2452,7 +2620,7 @@ const HelpPage = () => {
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Urgency Level
+                        {getUrgencyLevel()}
                       </label>
                       <select
                         name="urgency"
@@ -2460,10 +2628,10 @@ const HelpPage = () => {
                         onChange={handleInputChange}
                         className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       >
-                        <option value="low">Low</option>
-                        <option value="medium">Medium</option>
-                        <option value="high">High</option>
-                        <option value="urgent">Urgent</option>
+                        <option value="low">{getLow()}</option>
+                        <option value="medium">{getMedium()}</option>
+                        <option value="high">{getHigh()}</option>
+                        <option value="urgent">{getUrgent()}</option>
                       </select>
                     </div>
                   </div>
@@ -2477,10 +2645,10 @@ const HelpPage = () => {
                       {actionLoading ? (
                         <>
                           <Loader className="h-5 w-5 animate-spin" />
-                          Updating...
+                          {getUpdating()}
                         </>
                       ) : (
-                        'Update Request'
+                        getUpdateRequest()
                       )}
                     </button>
                     <button
@@ -2491,7 +2659,7 @@ const HelpPage = () => {
                       }}
                       className="px-6 py-3 border border-gray-300 dark:border-gray-600 rounded-xl font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                     >
-                      Cancel
+                      {getCancel()}
                     </button>
                   </div>
                 </div>
@@ -2500,7 +2668,7 @@ const HelpPage = () => {
                 <div className="space-y-6">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Category *
+                      {getCategory()}
                     </label>
                     <select
                       name="category"
@@ -2508,7 +2676,7 @@ const HelpPage = () => {
                       onChange={handleItemInputChange}
                       className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
                     >
-                      <option value="">Select a category</option>
+                      <option value="">{getSelectCategory()}</option>
                       {itemCategories.map(cat => (
                         <option key={cat.id} value={cat.id}>{cat.label}</option>
                       ))}
@@ -2517,7 +2685,7 @@ const HelpPage = () => {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Title *
+                      {getItemTitle()}
                     </label>
                     <input
                       type="text"
@@ -2530,7 +2698,7 @@ const HelpPage = () => {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Description *
+                      {getItemDescription()}
                     </label>
                     <textarea
                       name="description"
@@ -2544,7 +2712,7 @@ const HelpPage = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Condition *
+                        {getItemCondition()}
                       </label>
                       <select
                         name="condition"
@@ -2552,17 +2720,17 @@ const HelpPage = () => {
                         onChange={handleItemInputChange}
                         className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
                       >
-                        <option value="new">New</option>
-                        <option value="like_new">Like New</option>
-                        <option value="good">Good</option>
-                        <option value="fair">Fair</option>
+                        <option value="new">{getNew()}</option>
+                        <option value="like_new">{getLikeNew()}</option>
+                        <option value="good">{getGood()}</option>
+                        <option value="fair">{getFair()}</option>
                         <option value="poor">Poor (Free only)</option>
                       </select>
                     </div>
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Quantity *
+                        {getQuantity()}
                       </label>
                       <input
                         type="number"
@@ -2577,7 +2745,7 @@ const HelpPage = () => {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Location *
+                      {getItemLocation()}
                     </label>
                     <input
                       type="text"
@@ -2597,10 +2765,10 @@ const HelpPage = () => {
                       {actionLoading ? (
                         <>
                           <Loader className="h-5 w-5 animate-spin" />
-                          Updating...
+                          {getUpdating()}
                         </>
                       ) : (
-                        'Update Item'
+                        getUpdateItem()
                       )}
                     </button>
                     <button
@@ -2611,7 +2779,7 @@ const HelpPage = () => {
                       }}
                       className="px-6 py-3 border border-gray-300 dark:border-gray-600 rounded-xl font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                     >
-                      Cancel
+                      {getCancel()}
                     </button>
                   </div>
                 </div>

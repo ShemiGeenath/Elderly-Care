@@ -13,8 +13,13 @@ import {
   Phone,
   Video,
   MoreVertical,
-  ArrowLeft
+  ArrowLeft,
+  Mic
 } from 'lucide-react';
+import VoiceRecorder from './VoiceRecorder';
+import VoiceMessage from './VoiceMessage';
+import { useLanguage } from '../../context/LanguageContext';
+import useTranslation from '../../hooks/useTranslation';
 
 const ChatWindow = ({ chat, currentUser, onClose }) => {
   const [message, setMessage] = useState('');
@@ -24,6 +29,11 @@ const ChatWindow = ({ chat, currentUser, onClose }) => {
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
+  const [showVoiceRecorder, setShowVoiceRecorder] = useState(false);
+  
+  const { getTranslation } = useLanguage();
+  const { t } = useTranslation();
+  
   const typingTimeoutRef = useRef();
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
@@ -33,6 +43,8 @@ const ChatWindow = ({ chat, currentUser, onClose }) => {
   const { 
     messages, 
     sendMessage, 
+    sendVoiceMessage,
+    sendMediaMessage,
     sendTyping, 
     typingUsers,
     fetchMessages,
@@ -43,6 +55,92 @@ const ChatWindow = ({ chat, currentUser, onClose }) => {
   const totalMessages = messages[chat?._id]?.total || 0;
   const currentPage = messages[chat?._id]?.page || 1;
   const totalPages = messages[chat?._id]?.pages || 1;
+
+  // Translation helper functions
+  const getInputPlaceholder = () => {
+    return getTranslation(
+      "Type a message or use voice recording...",
+      "පණිවුඩයක් ටයිප් කරන්න හෝ හඬ පටිගත කිරීම භාවිතා කරන්න..."
+    );
+  };
+  
+  const getNoMessagesTitle = () => {
+    return getTranslation("No messages yet", "තවම පණිවුඩ නැත");
+  };
+  
+  const getNoMessagesSubtitle = () => {
+    return getTranslation(
+      "Send a message to start the conversation",
+      "සංවාදය ආරම්භ කිරීමට පණිවුඩයක් යවන්න"
+    );
+  };
+  
+  const getSelectChatTitle = () => {
+    return getTranslation("Your Messages", "ඔබගේ පණිවුඩ");
+  };
+  
+  const getSelectChatSubtitle = () => {
+    return getTranslation("Select a chat to start messaging", "පණිවුඩ යැවීම ආරම්භ කිරීමට කතාබස් එකක් තෝරන්න");
+  };
+  
+  const getActiveNowText = () => {
+    return getTranslation("Active now", "දැන් ක්‍රියාකාරී");
+  };
+  
+  const getTypingText = () => {
+    if (!chat) return '';
+    const typingUsersList = getOtherParticipants()
+      .filter(p => typingUsers[p._id])
+      .map(p => p.firstName);
+    
+    if (typingUsersList.length === 1) {
+      return getTranslation(`${typingUsersList[0]} is typing...`, `${typingUsersList[0]} ටයිප් කරමින්...`);
+    } else if (typingUsersList.length === 2) {
+      return getTranslation(`${typingUsersList[0]} and ${typingUsersList[1]} are typing...`, `${typingUsersList[0]} සහ ${typingUsersList[1]} ටයිප් කරමින්...`);
+    } else if (typingUsersList.length > 2) {
+      return getTranslation("Several people are typing...", "පුද්ගලයින් කිහිප දෙනෙකු ටයිප් කරමින්...");
+    }
+    return '';
+  };
+  
+  const getTodayText = () => {
+    return getTranslation("Today", "අද");
+  };
+  
+  const getYesterdayText = () => {
+    return getTranslation("Yesterday", "ඊයේ");
+  };
+  
+  const getRecordVoiceTitle = () => {
+    return getTranslation("Record voice message", "හඬ පණිවුඩය පටිගත කරන්න");
+  };
+  
+  const getSendImageTitle = () => {
+    return getTranslation("Send image", "පින්තූරයක් යවන්න");
+  };
+  
+  const getSendVideoTitle = () => {
+    return getTranslation("Send video", "වීඩියෝවක් යවන්න");
+  };
+  
+  const getSendFileTitle = () => {
+    return getTranslation("Send file", "ගොනුවක් යවන්න");
+  };
+
+  const formatMessageDate = (date) => {
+    const messageDate = new Date(date);
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    if (messageDate.toDateString() === today.toDateString()) {
+      return getTodayText();
+    } else if (messageDate.toDateString() === yesterday.toDateString()) {
+      return getYesterdayText();
+    } else {
+      return format(messageDate, 'MMM dd, yyyy');
+    }
+  };
 
   // Fetch messages when chat is selected
   useEffect(() => {
@@ -142,6 +240,29 @@ const ChatWindow = ({ chat, currentUser, onClose }) => {
     }
   };
 
+ const handleVoiceSend = async (audioFile, duration) => {
+  if (!chat) return;
+  
+  try {
+    await sendVoiceMessage(chat._id, audioFile, duration);
+    setShowVoiceRecorder(false);
+    scrollToBottom();
+  } catch (err) {
+    console.error('Error sending voice message:', err);
+  }
+};
+
+  const handleMediaSend = async (file, type) => {
+    if (!chat) return;
+    
+    try {
+      await sendMediaMessage(chat._id, file, type);
+      scrollToBottom();
+    } catch (err) {
+      console.error('Error sending media message:', err);
+    }
+  };
+
   const handleKeyPress = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -150,13 +271,25 @@ const ChatWindow = ({ chat, currentUser, onClose }) => {
   };
 
   const handleFileSelect = (type) => {
-    fileInputRef.current.accept = type === 'image' ? 'image/*' : '*/*';
+    fileInputRef.current.accept = type === 'image' ? 'image/*' : type === 'video' ? 'video/*' : '*/*';
     fileInputRef.current.click();
   };
 
-  const handleFileChange = (e) => {
+  const handleFileChange = async (e) => {
     const files = Array.from(e.target.files);
-    setAttachments(prev => [...prev, ...files]);
+    
+    for (const file of files) {
+      if (file.type.startsWith('image/')) {
+        await handleMediaSend(file, 'image');
+      } else if (file.type.startsWith('video/')) {
+        await handleMediaSend(file, 'video');
+      } else {
+        await handleMediaSend(file, 'file');
+      }
+    }
+    
+    // Clear the input
+    e.target.value = '';
   };
 
   const removeAttachment = (index) => {
@@ -167,33 +300,18 @@ const ChatWindow = ({ chat, currentUser, onClose }) => {
     return format(new Date(date), 'HH:mm');
   };
 
-  const formatMessageDate = (date) => {
-    const messageDate = new Date(date);
-    const today = new Date();
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-
-    if (messageDate.toDateString() === today.toDateString()) {
-      return 'Today';
-    } else if (messageDate.toDateString() === yesterday.toDateString()) {
-      return 'Yesterday';
-    } else {
-      return format(messageDate, 'MMM dd, yyyy');
-    }
-  };
-
   const getOtherParticipants = () => {
     if (!chat) return [];
     return chat.participants?.filter(p => p._id !== currentUser.id) || [];
   };
 
   const getChatName = () => {
-    if (!chat) return 'Chat';
+    if (!chat) return getTranslation("Chat", "කතාබස්");
     if (chat.isGroupChat) {
-      return chat.groupName || 'Group Chat';
+      return chat.groupName || getTranslation("Group Chat", "කණ්ඩායම් කතාබස්");
     }
     const other = getOtherParticipants()[0];
-    return other ? `${other.firstName} ${other.lastName}` : 'Chat';
+    return other ? `${other.firstName} ${other.lastName}` : getTranslation("Chat", "කතාබස්");
   };
 
   const getChatAvatar = () => {
@@ -211,20 +329,81 @@ const ChatWindow = ({ chat, currentUser, onClose }) => {
     return otherParticipants.some(p => typingUsers[p._id]);
   };
 
-  const getTypingText = () => {
-    if (!chat) return '';
-    const typingUsersList = getOtherParticipants()
-      .filter(p => typingUsers[p._id])
-      .map(p => p.firstName);
-    
-    if (typingUsersList.length === 1) {
-      return `${typingUsersList[0]} is typing...`;
-    } else if (typingUsersList.length === 2) {
-      return `${typingUsersList[0]} and ${typingUsersList[1]} are typing...`;
-    } else if (typingUsersList.length > 2) {
-      return 'Several people are typing...';
+  const renderMessageContent = (msg, isOwnMessage) => {
+    // Handle different message types
+    if (msg.messageType === 'voice') {
+      return (
+        <div className="mt-1">
+          <VoiceMessage 
+            message={msg} 
+            isOwnMessage={isOwnMessage} 
+          />
+        </div>
+      );
+    } else if (msg.messageType === 'image') {
+      return (
+        <div className="mt-2">
+          <img
+            src={msg.mediaUrl || msg.attachments?.[0]?.url}
+            alt={getTranslation("Image attachment", "පින්තූර ඇමුණුම")}
+            className="max-w-full max-h-64 rounded-lg cursor-pointer hover:opacity-90"
+            onClick={() => window.open(msg.mediaUrl || msg.attachments?.[0]?.url, '_blank')}
+          />
+        </div>
+      );
+    } else if (msg.messageType === 'video') {
+      return (
+        <div className="mt-2">
+          <video 
+            src={msg.mediaUrl || msg.attachments?.[0]?.url}
+            controls
+            className="max-w-full max-h-64 rounded-lg"
+          />
+        </div>
+      );
+    } else if (msg.attachments?.length > 0) {
+      // Handle attachments array
+      return msg.attachments.map((att, idx) => (
+        <div key={idx} className="mt-2">
+          {att.type === 'image' ? (
+            <img
+              src={att.url}
+              alt={getTranslation("Attachment", "ඇමුණුම")}
+              className="max-w-full max-h-64 rounded-lg cursor-pointer hover:opacity-90"
+              onClick={() => window.open(att.url, '_blank')}
+            />
+          ) : att.type === 'video' ? (
+            <video 
+              src={att.url}
+              controls
+              className="max-w-full max-h-64 rounded-lg"
+            />
+          ) : att.type === 'voice' ? (
+            <VoiceMessage 
+              message={{...msg, mediaUrl: att.url, duration: att.duration}} 
+              isOwnMessage={isOwnMessage} 
+            />
+          ) : (
+            <a
+              href={att.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center space-x-2 p-2 bg-gray-100 rounded-lg hover:bg-gray-200"
+            >
+              <Paperclip className="h-4 w-4" />
+              <span className="text-sm">{att.filename || getTranslation("Attachment", "ඇමුණුම")}</span>
+            </a>
+          )}
+        </div>
+      ));
+    } else {
+      // Regular text message
+      return (
+        <p className="text-sm whitespace-pre-wrap break-words">
+          {msg.content}
+        </p>
+      );
     }
-    return '';
   };
 
   if (!chat) {
@@ -236,8 +415,8 @@ const ChatWindow = ({ chat, currentUser, onClose }) => {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
             </svg>
           </div>
-          <h3 className="text-xl font-medium text-gray-900 mb-2">Your Messages</h3>
-          <p className="text-gray-500">Select a chat to start messaging</p>
+          <h3 className="text-xl font-medium text-gray-900 mb-2">{getSelectChatTitle()}</h3>
+          <p className="text-gray-500">{getSelectChatSubtitle()}</p>
         </div>
       </div>
     );
@@ -270,7 +449,7 @@ const ChatWindow = ({ chat, currentUser, onClose }) => {
               {isUserTyping() ? (
                 <span className="text-green-600">{getTypingText()}</span>
               ) : (
-                'Active now'
+                getActiveNowText()
               )}
             </p>
           </div>
@@ -310,10 +489,10 @@ const ChatWindow = ({ chat, currentUser, onClose }) => {
                 </svg>
               </div>
               <h3 className="text-lg font-medium text-gray-900 mb-2">
-                No messages yet
+                {getNoMessagesTitle()}
               </h3>
               <p className="text-gray-500">
-                Send a message to start the conversation
+                {getNoMessagesSubtitle()}
               </p>
             </div>
           </div>
@@ -338,7 +517,7 @@ const ChatWindow = ({ chat, currentUser, onClose }) => {
                       {!isOwnMessage && (
                         <img
                           src={msg.sender?.profilePhoto || '/default-avatar.png'}
-                          alt={msg.sender?.firstName || 'User'}
+                          alt={msg.sender?.firstName || getTranslation("User", "පරිශීලක")}
                           className="h-8 w-8 rounded-full object-cover mt-1"
                         />
                       )}
@@ -350,31 +529,7 @@ const ChatWindow = ({ chat, currentUser, onClose }) => {
                               : 'bg-white text-gray-900 border border-gray-200'
                           }`}
                         >
-                          <p className="text-sm whitespace-pre-wrap break-words">
-                            {msg.content}
-                          </p>
-                          {msg.attachments?.map((att, idx) => (
-                            <div key={idx} className="mt-2">
-                              {att.type === 'image' ? (
-                                <img
-                                  src={att.url}
-                                  alt="Attachment"
-                                  className="max-w-full rounded-lg cursor-pointer hover:opacity-90"
-                                  onClick={() => window.open(att.url, '_blank')}
-                                />
-                              ) : (
-                                <a
-                                  href={att.url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="flex items-center space-x-2 p-2 bg-gray-100 rounded-lg hover:bg-gray-200"
-                                >
-                                  <Paperclip className="h-4 w-4" />
-                                  <span className="text-sm">{att.filename}</span>
-                                </a>
-                              )}
-                            </div>
-                          ))}
+                          {renderMessageContent(msg, isOwnMessage)}
                         </div>
                         <div className={`flex items-center space-x-1 mt-1 text-xs ${
                           isOwnMessage ? 'justify-end' : 'justify-start'
@@ -415,84 +570,111 @@ const ChatWindow = ({ chat, currentUser, onClose }) => {
 
       {/* Message Input */}
       <div className="px-6 py-4 border-t border-gray-200 bg-white">
-        {attachments.length > 0 && (
-          <div className="flex flex-wrap gap-2 mb-3">
-            {attachments.map((file, index) => (
-              <div key={index} className="relative group">
-                <div className="h-16 w-16 bg-gray-100 rounded-lg flex items-center justify-center border border-gray-200">
-                  {file.type?.startsWith('image/') ? (
-                    <img
-                      src={URL.createObjectURL(file)}
-                      alt="Attachment preview"
-                      className="h-full w-full object-cover rounded-lg"
-                    />
-                  ) : (
-                    <Paperclip className="h-6 w-6 text-gray-400" />
-                  )}
-                </div>
+        {showVoiceRecorder ? (
+          <VoiceRecorder 
+            onSend={handleVoiceSend}
+            onCancel={() => setShowVoiceRecorder(false)}
+          />
+        ) : (
+          <>
+            {attachments.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-3">
+                {attachments.map((file, index) => (
+                  <div key={index} className="relative group">
+                    <div className="h-16 w-16 bg-gray-100 rounded-lg flex items-center justify-center border border-gray-200">
+                      {file.type?.startsWith('image/') ? (
+                        <img
+                          src={URL.createObjectURL(file)}
+                          alt={getTranslation("Attachment preview", "ඇමුණුම පෙරදසුන")}
+                          className="h-full w-full object-cover rounded-lg"
+                        />
+                      ) : (
+                        <Paperclip className="h-6 w-6 text-gray-400" />
+                      )}
+                    </div>
+                    <button
+                      onClick={() => removeAttachment(index)}
+                      className="absolute -top-2 -right-2 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <form onSubmit={handleSendMessage} className="flex items-end space-x-2">
+              <div className="flex-1 bg-gray-100 rounded-2xl px-4 py-2">
+                <textarea
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  onKeyDown={handleKeyPress}
+                  placeholder={getInputPlaceholder()}
+                  rows="1"
+                  className="w-full bg-transparent border-0 focus:ring-0 text-sm resize-none max-h-32"
+                  style={{ minHeight: '40px' }}
+                />
+              </div>
+
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileChange}
+                className="hidden"
+                multiple
+              />
+
+              <div className="flex items-center space-x-1">
                 <button
-                  onClick={() => removeAttachment(index)}
-                  className="absolute -top-2 -right-2 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition"
+                  type="button"
+                  onClick={() => setShowVoiceRecorder(true)}
+                  className="p-2 hover:bg-gray-100 rounded-full"
+                  title={getRecordVoiceTitle()}
                 >
-                  <X className="h-3 w-3" />
+                  <Mic className="h-5 w-5 text-gray-600" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleFileSelect('image')}
+                  className="p-2 hover:bg-gray-100 rounded-full"
+                  title={getSendImageTitle()}
+                >
+                  <Image className="h-5 w-5 text-gray-600" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleFileSelect('video')}
+                  className="p-2 hover:bg-gray-100 rounded-full"
+                  title={getSendVideoTitle()}
+                >
+                  <Video className="h-5 w-5 text-gray-600" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleFileSelect('file')}
+                  className="p-2 hover:bg-gray-100 rounded-full"
+                  title={getSendFileTitle()}
+                >
+                  <Paperclip className="h-5 w-5 text-gray-600" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                  className="p-2 hover:bg-gray-100 rounded-full"
+                >
+                  <Smile className="h-5 w-5 text-gray-600" />
+                </button>
+                <button
+                  type="submit"
+                  disabled={!message.trim() && attachments.length === 0}
+                  className="p-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white rounded-full transition"
+                >
+                  <Send className="h-5 w-5" />
                 </button>
               </div>
-            ))}
-          </div>
+            </form>
+          </>
         )}
-
-        <form onSubmit={handleSendMessage} className="flex items-end space-x-2">
-          <div className="flex-1 bg-gray-100 rounded-2xl px-4 py-2">
-            <textarea
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              onKeyDown={handleKeyPress}
-              placeholder="Type a message..."
-              rows="1"
-              className="w-full bg-transparent border-0 focus:ring-0 text-sm resize-none max-h-32"
-              style={{ minHeight: '40px' }}
-            />
-          </div>
-
-          <input
-            type="file"
-            ref={fileInputRef}
-            onChange={handleFileChange}
-            className="hidden"
-            multiple
-          />
-
-          <div className="flex items-center space-x-1">
-            <button
-              type="button"
-              onClick={() => handleFileSelect('image')}
-              className="p-2 hover:bg-gray-100 rounded-full"
-            >
-              <Image className="h-5 w-5 text-gray-600" />
-            </button>
-            <button
-              type="button"
-              onClick={() => handleFileSelect('file')}
-              className="p-2 hover:bg-gray-100 rounded-full"
-            >
-              <Paperclip className="h-5 w-5 text-gray-600" />
-            </button>
-            <button
-              type="button"
-              onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-              className="p-2 hover:bg-gray-100 rounded-full"
-            >
-              <Smile className="h-5 w-5 text-gray-600" />
-            </button>
-            <button
-              type="submit"
-              disabled={!message.trim() && attachments.length === 0}
-              className="p-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white rounded-full transition"
-            >
-              <Send className="h-5 w-5" />
-            </button>
-          </div>
-        </form>
       </div>
     </div>
   );

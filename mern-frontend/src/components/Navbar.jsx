@@ -1,14 +1,29 @@
-// Navbar.jsx - Complete corrected version
+// Navbar.jsx - Complete corrected version with SOS functionality
 import React, { useState, useEffect, useRef } from "react";
-import { FaSearch, FaChevronDown, FaBell, FaEnvelope, FaUser, FaCog, FaQuestionCircle, FaSignOutAlt } from "react-icons/fa";
+import { 
+  FaSearch, FaChevronDown, FaBell, FaEnvelope, FaUser, 
+  FaCog, FaQuestionCircle, FaSignOutAlt, FaExclamationTriangle 
+} from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import { useChat } from '../context/ChatContext';
 import { formatDistanceToNow } from 'date-fns';
+import axios from 'axios';
+import { toast } from 'react-hot-toast';
+import LanguageSwitcher from './LanguageSwitcher';
+import { useLanguage } from '../context/LanguageContext';
+import useTranslation from '../hooks/useTranslation';
 
 const Navbar = ({ user }) => {
   const [showDropdown, setShowDropdown] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showSosHistory, setShowSosHistory] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [sosLoading, setSosLoading] = useState(false);
+  const [sosHistory, setSosHistory] = useState([]);
+  
+   const { t } = useTranslation();
+  const { getTranslation } = useLanguage();
+
   const navigate = useNavigate();
   
   const { 
@@ -20,6 +35,7 @@ const Navbar = ({ user }) => {
   
   const dropdownRef = useRef(null);
   const notificationRef = useRef(null);
+  const sosHistoryRef = useRef(null);
 
   // Handle clicks outside dropdowns
   useEffect(() => {
@@ -29,6 +45,9 @@ const Navbar = ({ user }) => {
       }
       if (notificationRef.current && !notificationRef.current.contains(event.target)) {
         setShowNotifications(false);
+      }
+      if (sosHistoryRef.current && !sosHistoryRef.current.contains(event.target)) {
+        setShowSosHistory(false);
       }
     };
 
@@ -40,6 +59,46 @@ const Navbar = ({ user }) => {
   useEffect(() => {
     requestNotificationPermission();
   }, [requestNotificationPermission]);
+
+  // Fetch SOS history
+  useEffect(() => {
+    if (user?.id) {
+      fetchSOSHistory();
+    }
+  }, [user]);
+
+  // Add this debug useEffect in Navbar.jsx
+useEffect(() => {
+  console.log("🔍 Navbar received user prop:", user);
+  
+  // Check what's in localStorage
+  try {
+    const storedUser = localStorage.getItem('elderlyUser');
+    if (storedUser) {
+      const parsedUser = JSON.parse(storedUser);
+      console.log("🔍 User from localStorage:", parsedUser);
+      console.log("🔍 Emergency phone in localStorage:", parsedUser.emergencyPhone);
+    } else {
+      console.log("🔍 No user in localStorage");
+    }
+  } catch (e) {
+    console.error("Error parsing stored user:", e);
+  }
+}, [user]);
+
+  const fetchSOSHistory = async () => {
+    try {
+      const token = localStorage.getItem('elderlyToken');
+      const response = await axios.get('http://localhost:5000/api/sos/history', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (response.data.success) {
+        setSosHistory(response.data.history);
+      }
+    } catch (error) {
+      console.error('Error fetching SOS history:', error);
+    }
+  };
 
   const handleProfileClick = () => {
     setShowDropdown(false);
@@ -68,6 +127,164 @@ const Navbar = ({ user }) => {
   const handleViewAllMessages = () => {
     navigate('/chat');
     setShowNotifications(false);
+  };
+
+  // SOS Handler function
+// Updated handleSOS function with localStorage fallback
+const handleSOS = async () => {
+  console.log("🔴 SOS button clicked!");
+  
+  // Try to get emergency info from multiple sources
+  let emergencyPhone = user?.emergencyPhone;
+  let emergencyContact = user?.emergencyContact;
+  
+  console.log("🔴 From user prop - Phone:", emergencyPhone, "Contact:", emergencyContact);
+  
+  // If not in user prop, try localStorage
+  if (!emergencyPhone) {
+    try {
+      const storedUser = localStorage.getItem('elderlyUser');
+      if (storedUser) {
+        const parsedUser = JSON.parse(storedUser);
+        emergencyPhone = parsedUser.emergencyPhone;
+        emergencyContact = parsedUser.emergencyContact;
+        console.log("🔴 From localStorage - Phone:", emergencyPhone, "Contact:", emergencyContact);
+      }
+    } catch (e) {
+      console.error("Error parsing stored user:", e);
+    }
+  }
+
+  // Check if we have emergency contact
+  if (!emergencyPhone) {
+    console.log("🔴 No emergency contact found!");
+    toast.error(
+      <div>
+        <p className="font-bold">No emergency contact found!</p>
+        <p className="text-sm">Please update your profile with emergency contact information.</p>
+        <button 
+          onClick={() => {
+            navigate('/profile');
+            toast.dismiss();
+          }}
+          className="mt-2 px-3 py-1 bg-cyan-600 text-white rounded-lg text-sm"
+        >
+          Update Profile
+        </button>
+      </div>,
+      { duration: 6000 }
+    );
+    return;
+  }
+
+  console.log("🔴 Emergency contact found:", emergencyPhone);
+  
+  // Confirm before sending
+  if (!window.confirm(`🚨 Send SOS emergency alert to ${emergencyContact || 'your emergency contact'}?\n\nThis will notify them via WhatsApp.`)) {
+    console.log("🔴 User cancelled SOS");
+    return;
+  }
+
+  setSosLoading(true);
+  console.log("🔴 SOS loading started");
+
+  try {
+    // Get user's current location (optional)
+    let location = null;
+    if (navigator.geolocation) {
+      try {
+        console.log("🔴 Getting location...");
+        const position = await new Promise((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            timeout: 5000,
+            enableHighAccuracy: true
+          });
+        });
+        
+        location = {
+          lat: position.coords.latitude,
+          lng: position.coords.longitude
+        };
+        console.log("🔴 Location obtained:", location);
+      } catch (geoError) {
+        console.log("🔴 Location access denied or unavailable");
+      }
+    }
+
+    // Send SOS request
+    const token = localStorage.getItem('elderlyToken');
+    console.log("🔴 Token exists:", !!token);
+    
+    const response = await axios.post(
+      'http://localhost:5000/api/sos/send',
+      {
+        location,
+        message: `I need immediate assistance!`
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      }
+    );
+
+    console.log("🔴 SOS response from backend:", response.data);
+
+    if (response.data.success) {
+      const successfulMethods = response.data.results?.filter(r => r.success) || [];
+      
+      toast.success(
+        <div>
+          <p className="font-bold text-green-400">✅ SOS Alert Sent!</p>
+          <p className="text-sm mt-1">
+            {successfulMethods.length > 0 
+              ? `Notified via: ${successfulMethods.map(m => m.method).join(', ')}`
+              : 'Alert sent to emergency contacts'}
+          </p>
+          {response.data.results?.some(r => r.method === 'whatsapp' && r.link) && (
+            <a 
+              href={response.data.results.find(r => r.method === 'whatsapp').link}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-2 inline-block px-3 py-1 bg-green-600 text-white rounded-lg text-sm"
+            >
+              Open WhatsApp
+            </a>
+          )}
+        </div>,
+        { duration: 8000 }
+      );
+      
+      // Play alert sound
+      playSOSSound();
+      
+      // Refresh SOS history
+      fetchSOSHistory();
+      
+    } else {
+      console.log("🔴 SOS failed:", response.data.message);
+      toast.error('Failed to send SOS. Please call emergency services directly.');
+    }
+  } catch (error) {
+    console.error('🔴 SOS error details:', error);
+    console.error('🔴 Error response:', error.response?.data);
+    
+    toast.error(
+      <div>
+        <p className="font-bold">Error sending SOS</p>
+        <p className="text-sm">{error.response?.data?.message || error.message}</p>
+        <p className="text-xs mt-2">Please call emergency services immediately if this is an emergency.</p>
+      </div>
+    );
+  } finally {
+    setSosLoading(false);
+    console.log("🔴 SOS loading finished");
+  }
+};
+  // Function to play SOS sound
+  const playSOSSound = () => {
+    const audio = new Audio('/sos-alert.mp3');
+    audio.play().catch(e => console.log('Audio play failed:', e));
   };
 
   const unreadNotifications = notifications.filter(n => !n.read).length;
@@ -118,18 +335,139 @@ const Navbar = ({ user }) => {
           <div className="flex items-center gap-4 mr-4">
             {/* Welcome Message */}
             <div className="bg-gradient-to-r from-gray-800 to-gray-900 rounded-xl px-5 py-2.5">
-              <p className="text-sm text-gray-300">
-                Welcome Back,{" "}
-                <span className="font-semibold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
-                  {user?.firstName || "John"}!
-                </span>
-              </p>
-            </div>
+          <p className="text-sm text-gray-300">
+            {getTranslation("Welcome Back", "ආපසු සාදරයෙන් පිළිගනිමු")},{" "}
+            <span className="font-semibold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
+              {user?.firstName || "John"}!
+            </span>
+          </p>
+        </div>
 
-            {/* SOS Button */}
-            <button className="relative px-6 py-2.5 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white rounded-xl font-bold shadow-lg hover:shadow-xl transition-all duration-200 group">
-              <span className="absolute inset-0 bg-white opacity-0 group-hover:opacity-20 rounded-xl transition-opacity"></span>
-              🚨 SOS
+            {/* SOS Button with History Toggle */}
+            <div className="relative">
+              <button
+                onClick={handleSOS}
+                disabled={sosLoading}
+                className={`relative px-6 py-2.5 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white rounded-xl font-bold shadow-lg hover:shadow-xl transition-all duration-200 group ${
+                  sosLoading ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
+              >
+                {sosLoading ? (
+                  <>
+                    <span className="absolute inset-0 flex items-center justify-center">
+                      <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                    </span>
+                    <span className="opacity-0">🚨 SOS</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="absolute inset-0 bg-white opacity-0 group-hover:opacity-20 rounded-xl transition-opacity"></span>
+                    🚨 SOS
+                  </>
+                )}
+              </button>
+
+              {/* SOS History Dropdown */}
+              {showSosHistory && (
+                <div 
+                  ref={sosHistoryRef}
+                  className="absolute right-0 mt-3 w-80 bg-gray-900 border border-gray-800 rounded-2xl shadow-2xl overflow-hidden z-50"
+                >
+                  <div className="p-4 bg-gradient-to-r from-red-600 to-red-700">
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-semibold text-white">SOS History</h3>
+                      <button
+                        onClick={() => setShowSosHistory(false)}
+                        className="text-white/80 hover:text-white"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  </div>
+                  <div className="max-h-96 overflow-y-auto">
+                    {sosHistory.length === 0 ? (
+                      <div className="p-8 text-center">
+                        <FaExclamationTriangle className="text-4xl text-gray-600 mx-auto mb-3" />
+                        <p className="text-gray-400">No SOS alerts sent</p>
+                        <p className="text-xs text-gray-500 mt-2">
+                          When you send SOS alerts, they'll appear here
+                        </p>
+                      </div>
+                    ) : (
+                      sosHistory.map((entry, index) => (
+                        <div key={index} className="p-4 border-b border-gray-800 hover:bg-gray-800/30 transition-colors">
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <p className="text-sm text-white font-medium">
+                                {new Date(entry.timestamp).toLocaleDateString()}
+                              </p>
+                              <p className="text-xs text-gray-400">
+                                {new Date(entry.timestamp).toLocaleTimeString()}
+                              </p>
+                            </div>
+                            <span className={`px-2 py-1 text-xs rounded-full ${
+                              entry.results?.some(r => r.success) 
+                                ? 'bg-green-500/20 text-green-400' 
+                                : 'bg-red-500/20 text-red-400'
+                            }`}>
+                              {entry.results?.filter(r => r.success).length || 0} sent
+                            </span>
+                          </div>
+                          {entry.location && (
+                            <a 
+                              href={`https://maps.google.com/?q=${entry.location.lat},${entry.location.lng}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs text-cyan-500 hover:text-cyan-400 mt-2 inline-block"
+                            >
+                              📍 View Location
+                            </a>
+                          )}
+                          <div className="mt-2 flex flex-wrap gap-1">
+                            {entry.results?.map((result, idx) => (
+                              <span
+                                key={idx}
+                                className={`text-xs px-2 py-0.5 rounded ${
+                                  result.success 
+                                    ? 'bg-green-500/10 text-green-400' 
+                                    : 'bg-red-500/10 text-red-400'
+                                }`}
+                              >
+                                {result.method}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                  {sosHistory.length > 0 && (
+                    <div className="p-3 border-t border-gray-800 bg-gray-900/50">
+                      <button
+                        onClick={() => {
+                          setShowSosHistory(false);
+                          navigate('/sos-history');
+                        }}
+                        className="text-xs text-cyan-500 hover:text-cyan-400 w-full text-center"
+                      >
+                        View All History
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+ <LanguageSwitcher />
+            {/* History Toggle Button */}
+            <button
+              onClick={() => setShowSosHistory(!showSosHistory)}
+              className="p-2 bg-gray-800/50 hover:bg-gray-700 rounded-xl transition-all duration-200 text-gray-400 hover:text-white"
+              title="View SOS History"
+            >
+              <FaExclamationTriangle className="text-lg" />
             </button>
 
             {/* Notification Bell */}
@@ -227,7 +565,7 @@ const Navbar = ({ user }) => {
                               </p>
                             </div>
 
-                            {/* Icon - FIXED: Changed from FaMessage to FaEnvelope */}
+                            {/* Icon */}
                             <FaEnvelope className="h-4 w-4 text-gray-600 group-hover:text-cyan-500 transition-colors" />
                           </div>
                         </button>
@@ -338,6 +676,22 @@ const Navbar = ({ user }) => {
                   >
                     <FaQuestionCircle className="text-purple-500" />
                     <span>Help Center</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setShowDropdown(false);
+                      setShowSosHistory(true);
+                    }}
+                    className="w-full text-left px-5 py-3 text-sm text-gray-300 hover:bg-gray-800 hover:text-white transition-colors flex items-center space-x-3"
+                  >
+                    <FaExclamationTriangle className="text-red-500" />
+                    <span>SOS History</span>
+                    {sosHistory.length > 0 && (
+                      <span className="ml-auto bg-red-500/20 text-red-400 text-xs px-2 py-0.5 rounded-full">
+                        {sosHistory.length}
+                      </span>
+                    )}
                   </button>
 
                   <div className="border-t border-gray-800 my-2"></div>

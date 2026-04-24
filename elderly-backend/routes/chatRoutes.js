@@ -3,6 +3,7 @@ const express = require('express');
 const router = express.Router();
 const chatController = require('../controllers/chatController');
 const protect = require('../middleware/authMiddleware');
+const { uploadChatMedia } = require('../config/cloudinary');
 
 // Get all chats for current user
 router.get('/chats', protect, chatController.getUserChats);
@@ -13,13 +14,23 @@ router.get('/chat/:userId', protect, chatController.getOrCreateChat);
 // Get messages for a specific chat
 router.get('/messages/:chatId', protect, chatController.getChatMessages);
 
-// Send a message
+// Send a text message
 router.post('/message/:chatId', protect, chatController.sendMessage);
+
+// Send a media message (image, video, voice, file)
+router.post('/media/:chatId', 
+  protect, 
+  uploadChatMedia.single('media'), 
+  chatController.sendMediaMessage
+);
 
 // Delete a message
 router.delete('/message/:messageId', protect, chatController.deleteMessage);
 
 // Mark messages as delivered
 router.put('/delivered/:chatId', protect, chatController.markAsDelivered);
+
+// Delete media from Cloudinary (optional)
+router.delete('/media/:publicId', protect, chatController.deleteMedia);
 
 module.exports = router;

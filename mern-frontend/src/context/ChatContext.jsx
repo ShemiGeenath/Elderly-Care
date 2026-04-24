@@ -182,7 +182,7 @@ export const ChatProvider = ({ children, currentUser }) => {
     }
   }, []);
 
-  // Send a message
+  // Send a text message
   const sendMessage = useCallback(async (chatId, content) => {
     try {
       const response = await axiosInstance.post(`/chat/message/${chatId}`, { content });
@@ -222,6 +222,114 @@ export const ChatProvider = ({ children, currentUser }) => {
       }
     } catch (err) {
       console.error('Error sending message:', err);
+      throw err;
+    }
+  }, []);
+
+  // Send voice message
+ // frontend/src/context/ChatContext.jsx
+// Update the sendVoiceMessage function:
+
+const sendVoiceMessage = useCallback(async (chatId, audioFile, duration) => {
+  try {
+    const formData = new FormData();
+    formData.append('media', audioFile);
+    formData.append('messageType', 'voice');
+    formData.append('duration', duration.toString()); // Convert to string to ensure proper sending
+
+    const response = await axiosInstance.post(`/chat/media/${chatId}`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    });
+    
+    if (response.data.success) {
+      const newMessage = response.data.message;
+      
+      setMessages(prev => {
+        const chatMessages = prev[chatId] || { messages: [] };
+        return {
+          ...prev,
+          [chatId]: {
+            ...chatMessages,
+            messages: [...chatMessages.messages, newMessage]
+          }
+        };
+      });
+      
+      if (socketRef.current) {
+        socketRef.current.emit('send-message', {
+          chatId,
+          message: newMessage
+        });
+      }
+      
+      setChats(prev => prev.map(chat => 
+        chat._id === chatId
+          ? { 
+              ...chat, 
+              lastMessage: newMessage,
+              updatedAt: new Date()
+            }
+          : chat
+      ).sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)));
+      
+      return newMessage;
+    }
+  } catch (err) {
+    console.error('Error sending voice message:', err);
+    throw err;
+  }
+}, []);
+
+  // Send media message (image, video, file)
+  const sendMediaMessage = useCallback(async (chatId, file, messageType) => {
+    try {
+      const formData = new FormData();
+      formData.append('media', file);
+      formData.append('messageType', messageType);
+
+      const response = await axiosInstance.post(`/chat/media/${chatId}`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+      
+      if (response.data.success) {
+        const newMessage = response.data.message;
+        
+        setMessages(prev => {
+          const chatMessages = prev[chatId] || { messages: [] };
+          return {
+            ...prev,
+            [chatId]: {
+              ...chatMessages,
+              messages: [...chatMessages.messages, newMessage]
+            }
+          };
+        });
+        
+        if (socketRef.current) {
+          socketRef.current.emit('send-message', {
+            chatId,
+            message: newMessage
+          });
+        }
+        
+        setChats(prev => prev.map(chat => 
+          chat._id === chatId
+            ? { 
+                ...chat, 
+                lastMessage: newMessage,
+                updatedAt: new Date()
+              }
+            : chat
+        ).sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)));
+        
+        return newMessage;
+      }
+    } catch (err) {
+      console.error('Error sending media message:', err);
       throw err;
     }
   }, []);
@@ -284,9 +392,22 @@ export const ChatProvider = ({ children, currentUser }) => {
       
       if ('Notification' in window && Notification.permission === 'granted') {
         const senderName = message.sender?.firstName || 'Someone';
-        const messagePreview = message.content?.length > 50 
-          ? message.content.substring(0, 50) + '...' 
-          : message.content || 'Sent an attachment';
+        
+        // Customize notification based on message type
+        let messagePreview = '';
+        if (message.messageType === 'voice') {
+          messagePreview = '🎤 Sent a voice message';
+        } else if (message.messageType === 'image') {
+          messagePreview = '📷 Sent an image';
+        } else if (message.messageType === 'video') {
+          messagePreview = '🎥 Sent a video';
+        } else if (message.content) {
+          messagePreview = message.content.length > 50 
+            ? message.content.substring(0, 50) + '...' 
+            : message.content;
+        } else {
+          messagePreview = 'Sent an attachment';
+        }
         
         new Notification(`New message from ${senderName}`, {
           body: messagePreview,
@@ -301,6 +422,7 @@ export const ChatProvider = ({ children, currentUser }) => {
           chatId,
           sender: message.sender,
           content: message.content,
+          messageType: message.messageType,
           timestamp: new Date(),
           read: false
         },
@@ -476,6 +598,8 @@ export const ChatProvider = ({ children, currentUser }) => {
       getOrCreateChat,
       fetchMessages,
       sendMessage,
+      sendVoiceMessage,
+      sendMediaMessage,
       sendTyping,
       setActiveChat,
       markAsRead,

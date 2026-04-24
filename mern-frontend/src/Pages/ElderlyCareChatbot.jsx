@@ -1,15 +1,27 @@
 // ElderlyCareChatbot.jsx
-
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { Mic, Send, MicOff, Heart, Pill, Activity, AlertCircle, Calendar, Coffee, Brain } from 'lucide-react';
+import { useLanguage } from '../context/LanguageContext';
+import useTranslation from '../hooks/useTranslation';
 
 const ElderlyCareChatbot = () => {
+  const { language, getTranslation } = useLanguage();
+  const { t } = useTranslation();
+  
+  // Get initial message based on language
+  const getInitialMessage = () => {
+    if (language === 'si') {
+      return "👋 ආයුබෝවන්! මම ඔබගේ කාරුණික වැඩිහිටි සත්කාර සහායකයා වෙමි. ඖෂධ මතක් කිරීම්, සෞඛ්‍ය උපදෙස්, දෛනික කටයුතු, හෝ කතාබස් කිරීමට මම මෙහි සිටිමි. අද මම ඔබට උදව් කරන්නේ කෙසේද?";
+    }
+    return "👋 Hello! I'm your caring elderly care assistant. I'm here to help with medication reminders, health tips, daily activities, or just to chat. How can I assist you today?";
+  };
+
   // Enhanced message structure with context tracking
   const [messages, setMessages] = useState([
     {
       id: 1,
-      text: "👋 Hello! I'm your caring elderly care assistant. I'm here to help with medication reminders, health tips, daily activities, or just to chat. How can I assist you today?",
+      text: getInitialMessage(),
       sender: 'ai',
       category: 'greeting',
       context: {
@@ -53,16 +65,75 @@ const ElderlyCareChatbot = () => {
   const recognitionRef = useRef(null);
 
   // Your API Key
-  const API_KEY = "AIzaSyAOJu0IFdXvke01tJR8mfei2cHRWmjjUAg";
+  const API_KEY = "AIzaSyClI7vFwZy3mFCN4IIn3cr5i-vu2XUrvIQ";
 
-  // Initialize Web Speech API
+  // Get placeholder text based on language
+  const getPlaceholder = () => {
+    if (language === 'si') {
+      return "ඔබගේ පණිවිඩය මෙහි ටයිප් කරන්න...";
+    }
+    return "Type your message here...";
+  };
+
+  // Get quick reply text based on language
+  const getQuickReplyText = () => {
+    return getTranslation("Quick replies:", "ඉක්මන් පිළිතුරු:");
+  };
+
+  // Get loading text based on language
+  const getLoadingText = () => {
+    if (language === 'si') {
+      return conversationContext.currentTopic 
+        ? `${conversationContext.currentTopic} ගැන කතා කරමින්...` 
+        : 'සිතමින්...';
+    }
+    return conversationContext.currentTopic 
+      ? `Continuing about ${conversationContext.currentTopic}...` 
+      : 'Thinking...';
+  };
+
+  // Get listening text based on language
+  const getListeningText = () => {
+    return getTranslation("Listening... (I'll remember our conversation)", "සවන් දෙමින්... (මම අපගේ සංවාදය මතක තබා ගන්නෙමි)");
+  };
+
+  // Get emergency text based on language
+  const getEmergencyText = () => {
+    return getTranslation("EMERGENCY MODE ACTIVE - Stay Calm", "හදිසි ප්‍රකාරය ක්‍රියාත්මකයි - සන්සුන්ව සිටින්න");
+  };
+
+  // Get emergency button text based on language
+  const getClearButtonText = () => {
+    return getTranslation("Clear", "ඉවත් කරන්න");
+  };
+
+  // Get footer text based on language
+  const getFooterText = () => {
+    return getTranslation("For emergencies, call 911 immediately", "හදිසි අවස්ථා සඳහා, වහාම 911 අමතන්න");
+  };
+
+  // Get welcome text based on language
+  const getWelcomeText = () => {
+    if (conversationContext.userPreferences?.name) {
+      if (language === 'si') {
+        return `ආපසු සාදරයෙන් පිළිගනිමු, ${conversationContext.userPreferences.name}! 👋`;
+      }
+      return `Welcome back, ${conversationContext.userPreferences.name}! 👋`;
+    }
+    return language === 'si' 
+      ? 'වැඩිහිටියන් සඳහා කාරුණික සහාය'
+      : 'Compassionate support for seniors';
+  };
+
+  // Initialize Web Speech API with language support
   useEffect(() => {
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       recognitionRef.current = new SpeechRecognition();
       recognitionRef.current.continuous = false;
       recognitionRef.current.interimResults = false;
-      recognitionRef.current.lang = 'en-US';
+      // Set recognition language based on selected language
+      recognitionRef.current.lang = language === 'si' ? 'si-LK' : 'en-US';
 
       recognitionRef.current.onresult = (event) => {
         const transcript = event.results[0][0].transcript;
@@ -87,7 +158,7 @@ const ElderlyCareChatbot = () => {
         recognitionRef.current.abort();
       }
     };
-  }, []);
+  }, [language]); // Re-initialize when language changes
 
   // Auto-scroll
   useEffect(() => {
@@ -365,40 +436,40 @@ const ElderlyCareChatbot = () => {
     switch (intent) {
       case 'medication':
         if (!entities.medications.length) {
-          questions.push("Which medication are you referring to?");
+          questions.push(getTranslation("Which medication are you referring to?", "ඔබ සඳහන් කරන්නේ කුමන ඖෂධයද?"));
         }
         if (!entities.timeframes.length) {
-          questions.push("When did you take this medication?");
+          questions.push(getTranslation("When did you take this medication?", "ඔබ මෙම ඖෂධය ගත්තේ කවදාද?"));
         }
         break;
 
       case 'symptom':
         if (!entities.symptoms.length) {
-          questions.push("Can you describe the symptom in more detail?");
+          questions.push(getTranslation("Can you describe the symptom in more detail?", "ඔබට රෝග ලක්ෂණය වඩාත් විස්තරාත්මකව විස්තර කළ හැකිද?"));
         }
         if (!entities.timeframes.length) {
-          questions.push("When did this symptom start?");
+          questions.push(getTranslation("When did this symptom start?", "මෙම රෝග ලක්ෂණය ආරම්භ වූයේ කවදාද?"));
         }
         break;
 
       case 'emotional':
         if (entities.emotions.includes('lonely')) {
-          questions.push("Would you like to talk about what's making you feel lonely?");
-          questions.push("Have you been able to connect with family or friends recently?");
+          questions.push(getTranslation("Would you like to talk about what's making you feel lonely?", "ඔබට තනිකමක් දැනෙන්නේ කුමක් නිසාදැයි කතා කිරීමට කැමතිද?"));
+          questions.push(getTranslation("Have you been able to connect with family or friends recently?", "ඔබට මෑතකදී පවුලේ අය හෝ මිතුරන් සමඟ සම්බන්ධ වීමට හැකි වී තිබේද?"));
         } else if (entities.emotions.includes('anxious')) {
-          questions.push("What specifically is making you feel anxious?");
-          questions.push("Have you tried any relaxation techniques?");
+          questions.push(getTranslation("What specifically is making you feel anxious?", "විශේෂයෙන් ඔබට කනස්සල්ලක් දැනෙන්නේ කුමක් ද?"));
+          questions.push(getTranslation("Have you tried any relaxation techniques?", "ඔබ කිසියම් ලිහිල් කිරීමේ ක්‍රම උත්සාහ කර තිබේද?"));
         }
         break;
 
       case 'activity':
-        questions.push("What kind of activities do you usually enjoy?");
-        questions.push("Do you have any mobility limitations I should know about?");
+        questions.push(getTranslation("What kind of activities do you usually enjoy?", "ඔබ සාමාන්‍යයෙන් රස විඳින ක්‍රියාකාරකම් මොනවාද?"));
+        questions.push(getTranslation("Do you have any mobility limitations I should know about?", "මා දැනගත යුතු ඔබගේ සංචලන සීමාවන් තිබේද?"));
         break;
 
       case 'nutrition':
-        questions.push("What did you eat today?");
-        questions.push("Are you having trouble preparing meals?");
+        questions.push(getTranslation("What did you eat today?", "ඔබ අද කෑවේ කුමක්ද?"));
+        questions.push(getTranslation("Are you having trouble preparing meals?", "ඔබට ආහාර පිළියෙළ කිරීමේ අපහසුවක් තිබේද?"));
         break;
     }
 
@@ -495,7 +566,14 @@ const ElderlyCareChatbot = () => {
       `- ${h.message} (${h.intent})`
     ).join('\n');
 
-    return `You are a compassionate elderly care assistant with expertise in senior healthcare. 
+    // Add language instruction to system prompt
+    const languageInstruction = language === 'si' 
+      ? "IMPORTANT: Respond in Sinhala (සිංහල) language. Use simple, clear Sinhala that elderly people can understand easily."
+      : "IMPORTANT: Respond in English. Use simple, clear English that elderly people can understand easily.";
+
+    return `${languageInstruction}
+
+You are a compassionate elderly care assistant with expertise in senior healthcare. 
 
 CURRENT CONTEXT:
 - Current Topic: ${safeContext.currentTopic}
@@ -612,15 +690,20 @@ Provide a caring, context-aware response that continues the conversation natural
           const utterance = new SpeechSynthesisUtterance(aiText.slice(0, 150));
           utterance.rate = 0.9;
           utterance.pitch = 1.1;
+          // Set voice language
+          utterance.lang = language === 'si' ? 'si-LK' : 'en-US';
           window.speechSynthesis.speak(utterance);
         }
       }
 
     } catch (error) {
       console.error('API Error:', error);
+      const errorMessage = language === 'si'
+        ? "සම්බන්ධතා ගැටලුවක් ඇත. කරුණාකර මොහොතකින් නැවත උත්සාහ කරන්න."
+        : "I'm having trouble connecting. Please try again in a moment.";
       setMessages(prev => [...prev, {
         id: Date.now() + 1,
-        text: "I'm having trouble connecting. Please try again in a moment.",
+        text: errorMessage,
         sender: 'ai',
         category: 'error',
         timestamp: new Date()
@@ -632,7 +715,10 @@ Provide a caring, context-aware response that continues the conversation natural
 
   const toggleListening = () => {
     if (!voiceSupported) {
-      alert('Voice recognition is not supported in your browser.');
+      const alertMsg = language === 'si'
+        ? "ඔබගේ බ්‍රවුසරයේ හඳුනාගැනීම සහාය නොදක්වයි."
+        : "Voice recognition is not supported in your browser.";
+      alert(alertMsg);
       return;
     }
 
@@ -656,7 +742,7 @@ Provide a caring, context-aware response that continues the conversation natural
 
     return (
       <div className="bg-gray-800 p-3 border-t border-gray-700">
-        <p className="text-sm text-gray-400 mb-2">Quick replies:</p>
+        <p className="text-sm text-gray-400 mb-2">{getQuickReplyText()}</p>
         <div className="flex flex-wrap gap-2">
           {context.followUpQuestions.slice(0, 2).map((question, index) => (
             <button
@@ -681,11 +767,11 @@ Provide a caring, context-aware response that continues the conversation natural
             <Heart className="w-6 h-6 text-red-500" />
           </div>
           <div className="flex-1">
-            <h1 className="text-xl font-bold">Elderly Care Assistant</h1>
+            <h1 className="text-xl font-bold">
+              {getTranslation("Elderly Care Assistant", "වැඩිහිටි සත්කාර සහායක")}
+            </h1>
             <p className="text-sm text-gray-200">
-              {conversationContext.userPreferences?.name 
-                ? `Welcome back, ${conversationContext.userPreferences.name}! 👋` 
-                : 'Compassionate support for seniors'}
+              {getWelcomeText()}
             </p>
           </div>
           {/* Show current context indicator */}
@@ -703,13 +789,13 @@ Provide a caring, context-aware response that continues the conversation natural
         <div className="bg-red-700 text-white p-3 flex items-center justify-between animate-pulse">
           <div className="flex items-center space-x-2">
             <AlertCircle className="w-5 h-5" />
-            <span className="font-bold">EMERGENCY MODE ACTIVE - Stay Calm</span>
+            <span className="font-bold">{getEmergencyText()}</span>
           </div>
           <button 
             onClick={() => setEmergencyMode(false)}
             className="px-3 py-1 bg-red-800 hover:bg-red-900 rounded text-sm"
           >
-            Clear
+            {getClearButtonText()}
           </button>
         </div>
       )}
@@ -717,25 +803,27 @@ Provide a caring, context-aware response that continues the conversation natural
       {/* Context-Aware Quick Actions */}
       <div className="bg-gray-800 p-2 flex overflow-x-auto space-x-2 scrollbar-hide">
         <button 
-          onClick={() => setInputText("I need help with my medications")}
+          onClick={() => setInputText(getTranslation("I need help with my medications", "මගේ ඖෂධ සඳහා උදව් අවශ්‍යයි"))}
           className="flex-shrink-0 px-3 py-2 bg-blue-900 hover:bg-blue-800 rounded-lg text-sm flex items-center"
         >
-          <Pill className="w-4 h-4 mr-2" /> Medications
+          <Pill className="w-4 h-4 mr-2" /> {getTranslation("Medications", "ඖෂධ")}
         </button>
         <button 
           onClick={() => setInputText(conversationContext.mentionedSymptoms?.length > 0 
-            ? `Tell me more about my ${conversationContext.mentionedSymptoms[0]}` 
-            : "I don't feel well")}
+            ? getTranslation(`Tell me more about my ${conversationContext.mentionedSymptoms[0]}`, `මගේ ${conversationContext.mentionedSymptoms[0]} ගැන වැඩි විස්තර කියන්න`)
+            : getTranslation("I don't feel well", "මට සනීප නැත"))}
           className="flex-shrink-0 px-3 py-2 bg-red-900 hover:bg-red-800 rounded-lg text-sm flex items-center"
         >
           <Heart className="w-4 h-4 mr-2" /> 
-          {conversationContext.mentionedSymptoms?.length > 0 ? 'My Symptoms' : 'Not feeling well'}
+          {conversationContext.mentionedSymptoms?.length > 0 
+            ? getTranslation("My Symptoms", "මගේ රෝග ලක්ෂණ") 
+            : getTranslation("Not feeling well", "සනීප නැත")}
         </button>
         <button 
-          onClick={() => setInputText("I'm feeling " + (conversationContext.userMood === 'negative' ? 'still sad' : 'lonely'))}
+          onClick={() => setInputText(getTranslation("I'm feeling lonely", "මට තනිකමක් දැනෙනවා"))}
           className="flex-shrink-0 px-3 py-2 bg-purple-900 hover:bg-purple-800 rounded-lg text-sm flex items-center"
         >
-          <Heart className="w-4 h-4 mr-2" /> Emotional Support
+          <Heart className="w-4 h-4 mr-2" /> {getTranslation("Emotional Support", "චිත්තවේගීය සහාය")}
         </button>
       </div>
 
@@ -763,7 +851,7 @@ Provide a caring, context-aware response that continues the conversation natural
               {message.sender === 'ai' && index > 0 && messages[index-1]?.intent === message.intent && (
                 <div className="text-xs mb-2 opacity-70 flex items-center">
                   <Brain className="w-3 h-3 mr-1" />
-                  Continuing about {message.intent}
+                  {getTranslation("Continuing about", "ගැන කතා කරමින්")} {message.intent}
                 </div>
               )}
               
@@ -799,9 +887,7 @@ Provide a caring, context-aware response that continues the conversation natural
                   <div className="w-3 h-3 bg-teal-500 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
                 </div>
                 <span className="text-gray-400">
-                  {conversationContext.currentTopic 
-                    ? `Continuing about ${conversationContext.currentTopic}...` 
-                    : 'Thinking...'}
+                  {getLoadingText()}
                 </span>
               </div>
             </div>
@@ -824,7 +910,7 @@ Provide a caring, context-aware response that continues the conversation natural
               placeholder={
                 conversationContext.followUpQuestions?.length > 0
                   ? conversationContext.followUpQuestions[0]
-                  : "Type your message here..."
+                  : getPlaceholder()
               }
               className="w-full bg-gray-700 text-gray-100 rounded-lg pl-4 pr-12 py-3 focus:outline-none focus:ring-2 focus:ring-teal-500 resize-none text-base"
               rows="1"
@@ -857,18 +943,18 @@ Provide a caring, context-aware response that continues the conversation natural
         {isListening && (
           <div className="mt-2 text-sm text-teal-400 flex items-center">
             <span className="animate-pulse mr-2">🎤</span>
-            Listening... (I'll remember our conversation)
+            {getListeningText()}
           </div>
         )}
 
         {/* Context status */}
         <div className="flex justify-between items-center mt-2">
           <p className="text-xs text-gray-500">
-            ⚕️ For emergencies, call 911 immediately
+            ⚕️ {getFooterText()}
           </p>
           {conversationContext.userPreferences?.name && (
             <p className="text-xs text-teal-500">
-              Talking with {conversationContext.userPreferences.name}
+              {getTranslation("Talking with", "සමඟ කතා කරමින්")} {conversationContext.userPreferences.name}
             </p>
           )}
         </div>

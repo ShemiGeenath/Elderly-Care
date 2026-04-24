@@ -1,4 +1,5 @@
-// controllers/adminController.js
+// backend/controllers/adminController.js
+
 const AdminUser = require("../models/Admin");
 const ElderlyUser = require("../models/ElderlyUser");
 const Post = require("../models/Post");
@@ -80,6 +81,25 @@ exports.adminLogin = async (req, res) => {
   }
 };
 
+// @desc    Get admin profile
+// @route   GET /api/admin/profile
+// @access  Private (Admin)
+exports.getAdminProfile = async (req, res) => {
+  try {
+    const admin = await AdminUser.findById(req.admin._id).select('-password');
+    res.json({
+      success: true,
+      admin
+    });
+  } catch (error) {
+    console.error("Get admin profile error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error fetching profile"
+    });
+  }
+};
+
 // @desc    Get all elderly users with filters
 // @route   GET /api/admin/users
 // @access  Private (Admin)
@@ -107,7 +127,7 @@ exports.getAllUsers = async (req, res) => {
       ];
     }
 
-    // Status filter (if needed)
+    // Status filter
     if (status) {
       query.isActive = status === 'active';
     }
@@ -117,7 +137,6 @@ exports.getAllUsers = async (req, res) => {
 
     const users = await ElderlyUser.find(query)
       .select("-password")
-      .populate('friends', 'firstName lastName profilePhoto')
       .sort(sort)
       .skip((page - 1) * limit)
       .limit(parseInt(limit));
@@ -146,9 +165,7 @@ exports.getAllUsers = async (req, res) => {
 exports.getUserDetails = async (req, res) => {
   try {
     const user = await ElderlyUser.findById(req.params.id)
-      .select("-password")
-      .populate('friends', 'firstName lastName profilePhoto')
-      .populate('friendRequests', 'firstName lastName profilePhoto');
+      .select("-password");
 
     if (!user) {
       return res.status(404).json({
@@ -160,22 +177,13 @@ exports.getUserDetails = async (req, res) => {
     // Get user's posts count
     const postsCount = await Post.countDocuments({ user: user._id });
 
-    // Get recent posts
-    const recentPosts = await Post.find({ user: user._id })
-      .sort({ createdAt: -1 })
-      .limit(5)
-      .populate('user', 'firstName lastName profilePhoto');
-
     res.json({
       success: true,
       user: {
         ...user.toObject(),
         stats: {
-          posts: postsCount,
-          friends: user.friends.length,
-          friendRequests: user.friendRequests.length
-        },
-        recentPosts
+          posts: postsCount
+        }
       }
     });
   } catch (error) {
@@ -193,7 +201,7 @@ exports.getUserDetails = async (req, res) => {
 exports.updateUserStatus = async (req, res) => {
   try {
     const { id } = req.params;
-    const { isActive, reason } = req.body;
+    const { isActive } = req.body;
 
     const user = await ElderlyUser.findByIdAndUpdate(
       id,
@@ -207,9 +215,6 @@ exports.updateUserStatus = async (req, res) => {
         message: "User not found"
       });
     }
-
-    // Log the action (you can create an ActivityLog model for this)
-    console.log(`User ${id} ${isActive ? 'activated' : 'deactivated'} by admin. Reason: ${reason}`);
 
     res.json({
       success: true,
@@ -256,11 +261,6 @@ exports.getAllPosts = async (req, res) => {
 
     const posts = await Post.find(query)
       .populate('user', 'firstName lastName email profilePhoto')
-      .populate('likes', 'firstName lastName')
-      .populate({
-        path: 'comments.user',
-        select: 'firstName lastName profilePhoto'
-      })
       .sort(sort)
       .skip((page - 1) * limit)
       .limit(parseInt(limit));
@@ -289,7 +289,6 @@ exports.getAllPosts = async (req, res) => {
 exports.deletePost = async (req, res) => {
   try {
     const { id } = req.params;
-    const { reason } = req.body;
 
     const post = await Post.findByIdAndDelete(id);
     
@@ -299,9 +298,6 @@ exports.deletePost = async (req, res) => {
         message: "Post not found"
       });
     }
-
-    // Log the deletion
-    console.log(`Post ${id} deleted by admin. Reason: ${reason}`);
 
     res.json({
       success: true,
@@ -325,57 +321,26 @@ exports.getDashboardStats = async (req, res) => {
       totalUsers,
       activeUsers,
       totalPosts,
-      totalComments,
       newUsersToday,
       newPostsToday,
-      pendingReports
+      recentUsers,
+      popularPosts
     ] = await Promise.all([
       ElderlyUser.countDocuments(),
       ElderlyUser.countDocuments({ isActive: true }),
       Post.countDocuments(),
-      Post.aggregate([
-        { $project: { commentsCount: { $size: "$comments" } } },
-        { $group: { _id: null, total: { $sum: "$commentsCount" } } }
-      ]),
       ElderlyUser.countDocuments({
         createdAt: { $gte: new Date(new Date().setHours(0, 0, 0, 0)) }
       }),
       Post.countDocuments({
         createdAt: { $gte: new Date(new Date().setHours(0, 0, 0, 0)) }
       }),
-      Report.countDocuments({ status: 'pending' })
+      ElderlyUser.find().sort({ createdAt: -1 }).limit(5).select('firstName lastName email profilePhoto isActive'),
+      Post.find()
+        .populate('user', 'firstName lastName profilePhoto')
+        .sort({ likes: -1 })
+        .limit(5)
     ]);
-
-    // Get user growth (last 7 days)
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-
-    const userGrowth = await ElderlyUser.aggregate([
-      {
-        $match: {
-          createdAt: { $gte: sevenDaysAgo }
-        }
-      },
-      {
-        $group: {
-          _id: {
-            year: { $year: "$createdAt" },
-            month: { $month: "$createdAt" },
-            day: { $dayOfMonth: "$createdAt" }
-          },
-          count: { $sum: 1 }
-        }
-      },
-      {
-        $sort: { "_id.year": 1, "_id.month": 1, "_id.day": 1 }
-      }
-    ]);
-
-    // Get popular posts (most liked)
-    const popularPosts = await Post.find()
-      .populate('user', 'firstName lastName profilePhoto')
-      .sort({ likes: -1 })
-      .limit(5);
 
     res.json({
       success: true,
@@ -383,11 +348,9 @@ exports.getDashboardStats = async (req, res) => {
         totalUsers,
         activeUsers,
         totalPosts,
-        totalComments: totalComments[0]?.total || 0,
         newUsersToday,
         newPostsToday,
-        pendingReports,
-        userGrowth,
+        recentUsers,
         popularPosts
       }
     });
@@ -425,8 +388,6 @@ exports.getAllReports = async (req, res) => {
 
     const reports = await Report.find(query)
       .populate('reporter', 'firstName lastName email profilePhoto')
-      .populate('assignedTo', 'fullName profileImage')
-      .populate('resolvedBy', 'fullName profileImage')
       .sort(sort)
       .skip((page - 1) * limit)
       .limit(parseInt(limit));
@@ -456,7 +417,7 @@ exports.updateReportStatus = async (req, res) => {
   try {
     const { id } = req.params;
     const { status, resolution } = req.body;
-    const adminId = req.admin?.id;
+    const adminId = req.admin?._id;
 
     const report = await Report.findById(id);
     
@@ -491,9 +452,93 @@ exports.updateReportStatus = async (req, res) => {
   }
 };
 
+
+exports.adminLogin = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    
+    console.log('========== LOGIN ATTEMPT ==========');
+    console.log('Email:', email);
+    console.log('Password received:', password ? 'Yes' : 'No');
+    
+    // Check if admin exists
+    const admin = await AdminUser.findOne({ email: email.toLowerCase() });
+    console.log('Admin found in DB:', admin ? 'Yes' : 'No');
+    
+    if (!admin) {
+      console.log('❌ Admin not found with email:', email);
+      return res.status(401).json({
+        success: false,
+        message: "Invalid credentials"
+      });
+    }
+
+    console.log('Admin ID:', admin._id);
+    console.log('Admin username:', admin.username);
+    console.log('Admin isActive:', admin.isActive);
+    
+    // Check if admin is active
+    if (!admin.isActive) {
+      console.log('❌ Admin account is deactivated');
+      return res.status(401).json({
+        success: false,
+        message: "Account is deactivated"
+      });
+    }
+
+    // Check password
+    console.log('Comparing passwords...');
+    console.log('Stored hashed password:', admin.password.substring(0, 20) + '...');
+    
+    const isPasswordValid = await bcrypt.compare(password, admin.password);
+    console.log('Password valid:', isPasswordValid);
+    
+    if (!isPasswordValid) {
+      console.log('❌ Password mismatch');
+      return res.status(401).json({
+        success: false,
+        message: "Invalid credentials"
+      });
+    }
+
+    console.log('✅ Login successful for:', admin.email);
+    console.log('====================================');
+    
+    // Update last login
+    admin.lastLogin = new Date();
+    await admin.save();
+
+    // Generate token
+    const token = generateAdminToken(admin._id, admin.role);
+
+    res.json({
+      success: true,
+      message: "Login successful",
+      token,
+      admin: {
+        id: admin._id,
+        username: admin.username,
+        email: admin.email,
+        role: admin.role,
+        fullName: admin.fullName,
+        profileImage: admin.profileImage,
+        permissions: admin.permissions
+      }
+    });
+
+  } catch (error) {
+    console.error("Admin login error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error during login",
+      error: error.message
+    });
+  }
+};
+
 // @desc    Create initial admin user (run once)
 // @route   POST /api/admin/init
-// @access  Public (Remove after first use)
+// @access  Public
 exports.createInitialAdmin = async (req, res) => {
   try {
     // Check if admin already exists
@@ -514,9 +559,7 @@ exports.createInitialAdmin = async (req, res) => {
       permissions: [
         { module: 'users', canView: true, canCreate: true, canEdit: true, canDelete: true },
         { module: 'posts', canView: true, canCreate: true, canEdit: true, canDelete: true },
-        { module: 'reports', canView: true, canCreate: true, canEdit: true, canDelete: true },
-        { module: 'analytics', canView: true, canCreate: false, canEdit: false, canDelete: false },
-        { module: 'settings', canView: true, canCreate: true, canEdit: true, canDelete: true }
+        { module: 'reports', canView: true, canCreate: true, canEdit: true, canDelete: true }
       ]
     };
 
@@ -538,26 +581,6 @@ exports.createInitialAdmin = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Server error creating initial admin"
-    });
-  }
-};
-
-// Add this to controllers/adminController.js
-// @desc    Get admin profile
-// @route   GET /api/admin/profile
-// @access  Private (Admin)
-exports.getAdminProfile = async (req, res) => {
-  try {
-    const admin = await AdminUser.findById(req.admin._id).select('-password');
-    res.json({
-      success: true,
-      admin
-    });
-  } catch (error) {
-    console.error("Get admin profile error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Server error fetching profile"
     });
   }
 };

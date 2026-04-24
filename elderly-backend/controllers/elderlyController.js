@@ -149,6 +149,8 @@ exports.registerElderly = async (req, res) => {
   }
 };
 
+// controllers/elderlyController.js
+// controllers/elderlyController.js
 exports.loginElderly = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -181,6 +183,7 @@ exports.loginElderly = async (req, res) => {
 
     const token = generateUserToken(user._id);
 
+    // Return ALL user fields in the response
     res.json({
       success: true,
       message: "Login successful",
@@ -191,6 +194,19 @@ exports.loginElderly = async (req, res) => {
         lastName: user.lastName,
         email: user.email,
         profilePhoto: user.profilePhoto,
+        coverPhoto: user.coverPhoto,
+        phone: user.phone,
+        address: user.address,
+        city: user.city,
+        state: user.state,
+        zipCode: user.zipCode,
+        emergencyContact: user.emergencyContact,
+        emergencyPhone: user.emergencyPhone,
+        emergencyEmail: user.emergencyEmail,
+        hobbies: user.hobbies,
+        helpNeeded: user.helpNeeded,
+        mobility: user.mobility,
+        birthDate: user.birthDate
       },
     });
   } catch (err) {
@@ -285,8 +301,10 @@ exports.uploadProfilePhoto = async (req, res) => {
   }
 };
 
+// controllers/elderlyController.js
 exports.getCurrentUser = async (req, res) => {
   try {
+    // Make sure to select ALL fields except password
     const user = await ElderlyUser.findById(req.user.id).select("-password");
     
     if (!user) {
@@ -296,9 +314,37 @@ exports.getCurrentUser = async (req, res) => {
       });
     }
 
+    console.log("Current user fetched with ALL fields:", {
+      id: user._id,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
+      emergencyPhone: user.emergencyPhone, // This should now show
+      emergencyContact: user.emergencyContact
+    });
+
     res.json({
       success: true,
-      user,
+      user: {
+        id: user._id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        profilePhoto: user.profilePhoto,
+        coverPhoto: user.coverPhoto,
+        phone: user.phone,
+        address: user.address,
+        city: user.city,
+        state: user.state,
+        zipCode: user.zipCode,
+        emergencyContact: user.emergencyContact,
+        emergencyPhone: user.emergencyPhone,
+        emergencyEmail: user.emergencyEmail,
+        hobbies: user.hobbies,
+        helpNeeded: user.helpNeeded,
+        mobility: user.mobility,
+        birthDate: user.birthDate
+      },
     });
   } catch (error) {
     console.error("Get current user error:", error);
@@ -345,19 +391,35 @@ exports.createPost = async (req, res) => {
   }
 };
 
+// Update in controllers/elderlyController.js
+// Replace the existing getAllPosts with this:
+
 exports.getAllPosts = async (req, res) => {
   try {
+    const currentUserId = req.user.id;
     const { page = 1, limit = 10 } = req.query;
     const skip = (page - 1) * limit;
 
-    const posts = await Post.find({ privacy: "public" })
+    // Get current user with following list
+    const currentUser = await ElderlyUser.findById(currentUserId);
+    
+    // Get posts from followed users AND own posts
+    const followingIds = [...currentUser.following, currentUserId];
+
+    const posts = await Post.find({ 
+      user: { $in: followingIds },
+      privacy: "public"
+    })
       .populate("user", "firstName lastName profilePhoto")
       .populate("comments.user", "firstName lastName profilePhoto")
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(parseInt(limit));
 
-    const total = await Post.countDocuments({ privacy: "public" });
+    const total = await Post.countDocuments({ 
+      user: { $in: followingIds },
+      privacy: "public"
+    });
 
     res.json({
       success: true,
@@ -1042,5 +1104,202 @@ exports.getNLPSuggestedFriends = async (req, res) => {
     });
   }
 };
+
+
+// ================= ADMIN CRUD OPERATIONS =================
+
+// Delete user (for admin)
+exports.deleteElderlyUser = async (req, res) => {
+  try {
+    const user = await ElderlyUser.findById(req.params.id);
+    
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found"
+      });
+    }
+
+    // Check if user is authorized (admin or self)
+    // For now, we'll allow if they're the same user or if they're an admin
+    // You might want to add proper admin role checking later
+    if (req.user.id !== user._id.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: "Not authorized to delete this user"
+      });
+    }
+
+    await user.deleteOne();
+    
+    res.json({
+      success: true,
+      message: "User deleted successfully"
+    });
+  } catch (err) {
+    console.error("Delete user error:", err);
+    res.status(500).json({
+      success: false,
+      message: "Error deleting user"
+    });
+  }
+};
+
+// Get single user by ID (for admin)
+exports.getUserById = async (req, res) => {
+  try {
+    const user = await ElderlyUser.findById(req.params.id).select("-password");
+    
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found"
+      });
+    }
+    
+    // Get user stats
+    const postCount = await Post.countDocuments({ user: user._id });
+    const chatCount = await Chat.countDocuments({ participants: user._id });
+    
+    res.json({
+      success: true,
+      user: {
+        ...user.toObject(),
+        stats: {
+          posts: postCount,
+          chats: chatCount
+        }
+      }
+    });
+  } catch (err) {
+    console.error("Get user by ID error:", err);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching user"
+    });
+  }
+};
+
+// Toggle user active status (for admin)
+exports.toggleUserStatus = async (req, res) => {
+  try {
+    const { isActive } = req.body;
+    
+    const user = await ElderlyUser.findById(req.params.id);
+    
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found"
+      });
+    }
+
+    user.isActive = isActive !== undefined ? isActive : !user.isActive;
+    await user.save();
+    
+    res.json({
+      success: true,
+      message: `User ${user.isActive ? 'activated' : 'deactivated'} successfully`,
+      isActive: user.isActive
+    });
+  } catch (err) {
+    console.error("Toggle user status error:", err);
+    res.status(500).json({
+      success: false,
+      message: "Error updating user status"
+    });
+  }
+};
+
+// Get all posts (admin version - no filters, all posts)
+exports.getAllPostsAdmin = async (req, res) => {
+  try {
+    const posts = await Post.find({})
+      .populate("user", "firstName lastName profilePhoto email")
+      .populate("comments.user", "firstName lastName profilePhoto")
+      .sort({ createdAt: -1 });
+
+    res.json({
+      success: true,
+      posts
+    });
+  } catch (err) {
+    console.error("Get all posts admin error:", err);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching posts"
+    });
+  }
+};
+
+// Add this to your existing elderlyController.js
+
+// Google OAuth success handler
+// Google OAuth success handler - REPLACE THIS ENTIRE FUNCTION
+exports.googleAuthSuccess = async (req, res) => {
+  try {
+    console.log("🔐 Google auth success callback triggered");
+    console.log("req.user:", req.user);
+    
+    if (!req.user) {
+      console.error("❌ No user in request");
+      return res.redirect('http://localhost:5173/login?error=auth_failed');
+    }
+    
+    // Generate JWT token
+    const token = generateUserToken(req.user._id);
+    
+    // Get FULL user data with ALL fields
+    const user = await ElderlyUser.findById(req.user._id).select("-password").lean();
+    
+    console.log("✅ Google auth successful for user:", user.email);
+    console.log("📋 User data being sent:", {
+      id: user._id,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
+      profilePhoto: user.profilePhoto,
+      emergencyPhone: user.emergencyPhone,
+      hobbies: user.hobbies
+    });
+    
+    // Encode user data for URL parameters
+    const redirectUrl = `http://localhost:5173/auth/google/callback?token=${token}&userId=${user._id}&firstName=${encodeURIComponent(user.firstName || '')}&lastName=${encodeURIComponent(user.lastName || '')}&email=${encodeURIComponent(user.email || '')}&profilePhoto=${encodeURIComponent(user.profilePhoto || '')}&phone=${encodeURIComponent(user.phone || '')}&emergencyPhone=${encodeURIComponent(user.emergencyPhone || '')}`;
+    
+    console.log("🔄 Redirecting to frontend");
+    res.redirect(redirectUrl);
+  } catch (err) {
+    console.error('❌ Google auth success error:', err);
+    res.redirect('http://localhost:5173/login?error=server_error');
+  }
+};
+
+// Get user by Google ID (for session restoration)
+exports.getUserByGoogleId = async (req, res) => {
+  try {
+    const { googleId } = req.params;
+    const user = await ElderlyUser.findOne({ googleId }).select('-password');
+    
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+    
+    res.json({
+      success: true,
+      user
+    });
+  } catch (err) {
+    console.error('Get user by Google ID error:', err);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching user'
+    });
+  }
+};
+
+
 // Update your existing getSuggestedFriends to use NLP
 exports.getSuggestedFriends = exports.getNLPSuggestedFriends;

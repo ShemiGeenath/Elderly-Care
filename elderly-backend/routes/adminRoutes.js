@@ -1,9 +1,10 @@
-// routes/adminRoutes.js
+// adminRoutes.js
+
 const express = require("express");
 const router = express.Router();
 const { 
   adminLogin,
-  getAdminProfile, // Add this
+  getAdminProfile,
   getAllUsers,
   getUserDetails,
   updateUserStatus,
@@ -18,12 +19,12 @@ const { adminAuth, requireRole } = require("../middleware/adminAuth");
 
 // Public routes
 router.post("/login", adminLogin);
-router.post("/init", createInitialAdmin); // Remove this after first use
+router.post("/init", createInitialAdmin);
 
-// Protected routes
+// Protected routes - all routes below require authentication
 router.use(adminAuth);
 
-// Profile - Add this before other routes
+// Profile management
 router.get("/profile", getAdminProfile);
 
 // Dashboard
@@ -32,11 +33,11 @@ router.get("/dashboard/stats", getDashboardStats);
 // User management
 router.get("/users", getAllUsers);
 router.get("/users/:id", getUserDetails);
-router.put("/users/:id/status", requireRole('super_admin', 'admin'), updateUserStatus);
+router.put("/users/:id/status", updateUserStatus);
 
 // Post management
 router.get("/posts", getAllPosts);
-router.delete("/posts/:id", requireRole('super_admin', 'admin'), deletePost);
+router.delete("/posts/:id", deletePost);
 
 // Report management
 router.get("/reports", getAllReports);

@@ -12,12 +12,20 @@ import {
   ChevronRight,
   MessageCircle,
   ExternalLink,
+  UserPlus,
+  UserCheck,
+  UserMinus
 } from "lucide-react";
 import Sidebar from "../components/Sidebar";
 import Navbar from "../components/Navbar";
+import { useLanguage } from "../context/LanguageContext";
+import useTranslation from "../hooks/useTranslation";
 
 const FriendsPage = () => {
   const navigate = useNavigate();
+  const { getTranslation } = useLanguage();
+  const { t } = useTranslation();
+  
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -25,6 +33,97 @@ const FriendsPage = () => {
   const [activeFilter, setActiveFilter] = useState("all");
   const [suggestedFriends, setSuggestedFriends] = useState([]);
   const [currentUser, setCurrentUser] = useState(null);
+  const [followingStatus, setFollowingStatus] = useState({});
+  const [followLoading, setFollowLoading] = useState({});
+
+  // Translation helper functions
+  const getLoadingText = () => {
+    return getTranslation("Loading community members...", "ප්‍රජා සාමාජිකයන් පූරණය වෙමින්...");
+  };
+
+  const getCommunityFriendsTitle = () => {
+    return getTranslation("Community Friends", "ප්‍රජා මිතුරන්");
+  };
+
+  const getCommunityFriendsSubtitle = () => {
+    return getTranslation(
+      "Connect with fellow seniors who share your interests and hobbies",
+      "ඔබගේ උනන්දුව සහ විනෝදාංශ බෙදාගන්නා සෙසු වැඩිහිටියන් සමඟ සම්බන්ධ වන්න"
+    );
+  };
+
+  const getTotalMembers = () => {
+    return getTranslation("Total Members", "සම්පූර්ණ සාමාජිකයින්");
+  };
+
+  const getSearchPlaceholder = () => {
+    return getTranslation(
+      "Search by name, hobby, or interest...",
+      "නම, විනෝදාංශය, හෝ උනන්දුව අනුව සොයන්න..."
+    );
+  };
+
+  const getSuggestedForYou = () => {
+    return getTranslation("Suggested For You", "ඔබ වෙනුවෙන් යෝජනා කෙරේ");
+  };
+
+  const getFilterBy = () => {
+    return getTranslation("Filter By", "පෙරහන් කරන්න");
+  };
+
+  const getFilterOptions = () => {
+    return [
+      { id: "all", label: getTranslation("All Members", "සියලුම සාමාජිකයින්"), icon: Users, color: "text-gray-600" },
+      { id: "following", label: getTranslation("Following", "අනුගමනය කරන"), icon: UserCheck, color: "text-green-600" },
+      { id: "not-following", label: getTranslation("Not Following", "අනුගමනය නොකරන"), icon: UserPlus, color: "text-blue-600" },
+      { id: "high-match", label: getTranslation("High Match (70%+)", "ඉහළ ගැලපීම (70%+)"), icon: Heart, color: "text-red-600" },
+      { id: "same-city", label: getTranslation("Same City", "එකම නගරය"), icon: MapPin, color: "text-blue-600" },
+    ];
+  };
+
+  const getStatsLabels = () => {
+    return {
+      averageMatch: getTranslation("Average Match", "සාමාන්‍ය ගැලපීම"),
+      following: getTranslation("Following", "අනුගමනය කරන"),
+      sharedHobbies: getTranslation("Shared Hobbies", "බෙදාගත් විනෝදාංශ")
+    };
+  };
+
+  const getSharedInterests = () => {
+    return getTranslation("Shared Interests", "බෙදාගත් උනන්දුව");
+  };
+
+  const getCanHelpWith = () => {
+    return getTranslation("Can Help With", "උදව් කළ හැකි");
+  };
+
+  const getFollowingButton = () => {
+    return getTranslation("Following", "අනුගමනය කරයි");
+  };
+
+  const getFollowButton = () => {
+    return getTranslation("Follow", "අනුගමනය කරන්න");
+  };
+
+  const getMessageButton = () => {
+    return getTranslation("Message", "පණිවුඩය");
+  };
+
+  const getProfileButton = () => {
+    return getTranslation("Profile", "පැතිකඩ");
+  };
+
+  const getNoMembersFound = () => {
+    return getTranslation("No members found", "සාමාජිකයින් හමු නොවීය");
+  };
+
+  const getShowAllMembers = () => {
+    return getTranslation("Show All Members", "සියලුම සාමාජිකයින් පෙන්වන්න");
+  };
+
+  const getMatchText = (percentage) => {
+    return getTranslation("match", "ගැලපීම");
+  };
 
   useEffect(() => {
     // Get current user from localStorage
@@ -52,6 +151,11 @@ const FriendsPage = () => {
       const response = await axios.get("/elderly/users/all");
       if (response.data.success) {
         setUsers(response.data.users);
+        
+        // Check follow status for each user
+        response.data.users.forEach(user => {
+          checkFollowStatus(user._id);
+        });
       }
     } catch (error) {
       console.error("Error fetching users:", error);
@@ -68,6 +172,70 @@ const FriendsPage = () => {
       }
     } catch (error) {
       console.error("Error fetching suggested friends:", error);
+    }
+  };
+
+  const checkFollowStatus = async (userId) => {
+    try {
+      const response = await axios.get(`/follow/status/${userId}`);
+      if (response.data.success) {
+        setFollowingStatus(prev => ({
+          ...prev,
+          [userId]: response.data.isFollowing
+        }));
+      }
+    } catch (error) {
+      console.error("Error checking follow status:", error);
+    }
+  };
+
+  const handleFollow = async (userId) => {
+    setFollowLoading(prev => ({ ...prev, [userId]: true }));
+    try {
+      const response = await axios.post(`/follow/follow/${userId}`);
+      if (response.data.success) {
+        setFollowingStatus(prev => ({
+          ...prev,
+          [userId]: true
+        }));
+        
+        setUsers(prevUsers => 
+          prevUsers.map(user => 
+            user._id === userId 
+              ? { ...user, isFollowing: true }
+              : user
+          )
+        );
+      }
+    } catch (error) {
+      console.error("Error following user:", error);
+    } finally {
+      setFollowLoading(prev => ({ ...prev, [userId]: false }));
+    }
+  };
+
+  const handleUnfollow = async (userId) => {
+    setFollowLoading(prev => ({ ...prev, [userId]: true }));
+    try {
+      const response = await axios.delete(`/follow/unfollow/${userId}`);
+      if (response.data.success) {
+        setFollowingStatus(prev => ({
+          ...prev,
+          [userId]: false
+        }));
+        
+        setUsers(prevUsers => 
+          prevUsers.map(user => 
+            user._id === userId 
+              ? { ...user, isFollowing: false }
+              : user
+          )
+        );
+      }
+    } catch (error) {
+      console.error("Error unfollowing user:", error);
+    } finally {
+      setFollowLoading(prev => ({ ...prev, [userId]: false }));
     }
   };
 
@@ -89,14 +257,17 @@ const FriendsPage = () => {
     }
 
     switch (activeFilter) {
+      case "following":
+        filtered = filtered.filter((user) => followingStatus[user._id]);
+        break;
+      case "not-following":
+        filtered = filtered.filter((user) => !followingStatus[user._id]);
+        break;
       case "high-match":
         filtered = filtered.filter((user) => user.matchPercentage >= 70);
         break;
       case "same-city":
-        filtered = filtered.filter((user) => user.city === users[0]?.city);
-        break;
-      case "same-hobbies":
-        filtered = filtered.filter((user) => user.commonHobbies?.length > 0);
+        filtered = filtered.filter((user) => user.city === currentUser?.city);
         break;
       default:
         break;
@@ -119,6 +290,9 @@ const FriendsPage = () => {
       );
       if (response.data.success) {
         setUsers(response.data.users);
+        response.data.users.forEach(user => {
+          checkFollowStatus(user._id);
+        });
       }
     } catch (error) {
       console.error("Error searching users:", error);
@@ -127,7 +301,6 @@ const FriendsPage = () => {
     }
   };
 
-  // Handle message button click - navigate to chat with this user
   const handleMessageUser = (userId) => {
     navigate(`/chat?user=${userId}`);
   };
@@ -153,42 +326,39 @@ const FriendsPage = () => {
         <div className="flex-1 bg-gradient-to-br from-gray-50 to-blue-50 flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-4 text-gray-600">Loading community members...</p>
+            <p className="mt-4 text-gray-600">{getLoadingText()}</p>
           </div>
         </div>
       </div>
     );
   }
 
+  const statsLabels = getStatsLabels();
+  const filterOptions = getFilterOptions();
+
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Sidebar */}
       <Sidebar user={currentUser} />
-
-      {/* Main Content */}
       <div className="ml-32 flex-1 flex flex-col">
-        {/* Navbar */}
         <Navbar user={currentUser} />
 
-        {/* Friends Page Content */}
-       <div className="flex-1 p-6 bg-gradient-to-br from-gray-50 to-blue-50">
+        <div className="flex-1 p-6 bg-gradient-to-br from-gray-50 to-blue-50">
           {/* Header with Stats */}
           <div className="mb-8">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div>
                 <h1 className="text-3xl font-bold text-gray-900 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                  Community Friends
+                  {getCommunityFriendsTitle()}
                 </h1>
                 <p className="text-gray-600 mt-2">
-                  Connect with fellow seniors who share your interests and
-                  hobbies
+                  {getCommunityFriendsSubtitle()}
                 </p>
               </div>
               <div className="flex flex-wrap gap-3">
                 <div className="bg-white rounded-xl shadow-sm p-4 min-w-[200px]">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-gray-500">Total Members</p>
+                      <p className="text-sm text-gray-500">{getTotalMembers()}</p>
                       <p className="text-2xl font-bold text-gray-900">
                         {users.length}
                       </p>
@@ -212,7 +382,7 @@ const FriendsPage = () => {
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
                     <input
                       type="text"
-                      placeholder="Search by name, hobby, or interest..."
+                      placeholder={getSearchPlaceholder()}
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-gray-50"
@@ -225,7 +395,7 @@ const FriendsPage = () => {
               <div className="bg-white rounded-2xl shadow-sm p-4 border border-gray-100">
                 <h3 className="font-semibold text-gray-900 mb-4 flex items-center">
                   <Heart className="h-5 w-5 text-red-500 mr-2" />
-                  Suggested For You
+                  {getSuggestedForYou()}
                 </h3>
                 <div className="space-y-4">
                   {suggestedFriends.map((user, index) => (
@@ -252,7 +422,7 @@ const FriendsPage = () => {
                             <span
                               className={`text-xs font-bold ${getMatchTextColor(user.matchPercentage)}`}
                             >
-                              {user.matchPercentage}% match
+                              {user.matchPercentage}% {getMatchText(user.matchPercentage)}
                             </span>
                             {user.commonHobbies?.length > 0 && (
                               <span className="text-xs text-gray-500">
@@ -277,35 +447,10 @@ const FriendsPage = () => {
               <div className="bg-white rounded-2xl shadow-sm p-4 border border-gray-100">
                 <h3 className="font-semibold text-gray-900 mb-4 flex items-center">
                   <Filter className="h-5 w-5 text-gray-500 mr-2" />
-                  Filter By
+                  {getFilterBy()}
                 </h3>
                 <div className="space-y-2">
-                  {[
-                    {
-                      id: "all",
-                      label: "All Members",
-                      icon: Users,
-                      color: "text-gray-600",
-                    },
-                    {
-                      id: "high-match",
-                      label: "High Match (70%+)",
-                      icon: Heart,
-                      color: "text-red-600",
-                    },
-                    {
-                      id: "same-city",
-                      label: "Same City",
-                      icon: MapPin,
-                      color: "text-blue-600",
-                    },
-                    {
-                      id: "same-hobbies",
-                      label: "Shared Hobbies",
-                      icon: HelpCircle,
-                      color: "text-green-600",
-                    },
-                  ].map((filter) => (
+                  {filterOptions.map((filter) => (
                     <button
                       key={filter.id}
                       onClick={() => setActiveFilter(filter.id)}
@@ -337,7 +482,7 @@ const FriendsPage = () => {
                 <div className="bg-gradient-to-r from-green-50 to-emerald-100 rounded-2xl shadow-sm p-5 border border-green-100">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-gray-600">Average Match</p>
+                      <p className="text-sm text-gray-600">{statsLabels.averageMatch}</p>
                       <p className="text-2xl font-bold text-gray-900">
                         {users.length > 0
                           ? Math.round(
@@ -359,13 +504,13 @@ const FriendsPage = () => {
                 <div className="bg-gradient-to-r from-blue-50 to-cyan-100 rounded-2xl shadow-sm p-5 border border-blue-100">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-gray-600">Same City</p>
+                      <p className="text-sm text-gray-600">{statsLabels.following}</p>
                       <p className="text-2xl font-bold text-gray-900">
-                        {users.filter((u) => u.city === users[0]?.city).length}
+                        {Object.values(followingStatus).filter(Boolean).length}
                       </p>
                     </div>
                     <div className="h-12 w-12 bg-blue-200 rounded-full flex items-center justify-center">
-                      <MapPin className="h-6 w-6 text-blue-700" />
+                      <UserCheck className="h-6 w-6 text-blue-700" />
                     </div>
                   </div>
                 </div>
@@ -373,7 +518,7 @@ const FriendsPage = () => {
                 <div className="bg-gradient-to-r from-purple-50 to-pink-100 rounded-2xl shadow-sm p-5 border border-purple-100">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-gray-600">Shared Hobbies</p>
+                      <p className="text-sm text-gray-600">{statsLabels.sharedHobbies}</p>
                       <p className="text-2xl font-bold text-gray-900">
                         {users.filter((u) => u.commonHobbies?.length > 0).length}
                       </p>
@@ -400,10 +545,8 @@ const FriendsPage = () => {
                           backgroundImage: `url(${user.coverPhoto || 'https://res.cloudinary.com/your-cloud-name/image/upload/v1/eldercare/defaults/default-cover.jpg'})`
                         }}
                       >
-                        {/* Gradient Overlay */}
                         <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
                         
-                        {/* Profile Photo Positioned at Bottom */}
                         <div className="absolute -bottom-12 left-1/2 transform -translate-x-1/2 z-10">
                           <div className="relative">
                             <div className="h-24 w-24 rounded-full bg-gradient-to-r from-blue-400 to-purple-500 p-1 shadow-lg">
@@ -436,7 +579,7 @@ const FriendsPage = () => {
                           </div>
                           <div className="mt-3">
                             <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold bg-gradient-to-r from-blue-100 to-blue-200 text-blue-800 border border-blue-200">
-                              {user.mobility?.replace("_", " ") || "Independent"}
+                              {user.mobility?.replace("_", " ") || getTranslation("Independent", "ස්වාධීන")}
                             </span>
                           </div>
                         </div>
@@ -447,7 +590,7 @@ const FriendsPage = () => {
                             <div>
                               <div className="flex items-center text-sm text-gray-500 mb-2">
                                 <Heart className="h-4 w-4 mr-2 text-red-500" />
-                                <span>Shared Interests</span>
+                                <span>{getSharedInterests()}</span>
                                 <span className="ml-auto font-medium text-gray-900">
                                   {user.commonHobbies.length}
                                 </span>
@@ -471,7 +614,7 @@ const FriendsPage = () => {
                             <div>
                               <div className="flex items-center text-sm text-gray-500 mb-2">
                                 <HelpCircle className="h-4 w-4 mr-2 text-blue-500" />
-                                <span>Can Help With</span>
+                                <span>{getCanHelpWith()}</span>
                                 <span className="ml-auto font-medium text-gray-900">
                                   {user.commonHelp.length}
                                 </span>
@@ -494,21 +637,55 @@ const FriendsPage = () => {
 
                         {/* Action Buttons */}
                         <div className="mt-6 pt-6 border-t border-gray-100">
-                          <div className="flex space-x-3">
-                            <button
-                              onClick={() => handleMessageUser(user._id)}
-                              className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white py-3 px-4 rounded-xl font-semibold transition-all duration-200 shadow-md hover:shadow-lg flex items-center justify-center space-x-2"
-                            >
-                              <MessageCircle className="h-4 w-4" />
-                              <span>Message</span>
-                            </button>
-                            <button 
-                              onClick={() => navigate(`/profile/${user._id}`)}
-                              className="px-4 py-3 border border-gray-300 hover:border-blue-400 hover:bg-blue-50 rounded-xl font-medium transition-all duration-200 flex items-center justify-center space-x-2"
-                            >
-                              <ExternalLink className="h-4 w-4" />
-                              <span>Profile</span>
-                            </button>
+                          <div className="flex flex-col space-y-2">
+                            {followingStatus[user._id] ? (
+                              <button
+                                onClick={() => handleUnfollow(user._id)}
+                                disabled={followLoading[user._id]}
+                                className="w-full bg-gradient-to-r from-gray-100 to-gray-200 hover:from-gray-200 hover:to-gray-300 text-gray-700 py-3 px-4 rounded-xl font-semibold transition-all duration-200 flex items-center justify-center space-x-2"
+                              >
+                                {followLoading[user._id] ? (
+                                  <div className="w-4 h-4 border-2 border-gray-500 border-t-transparent rounded-full animate-spin"></div>
+                                ) : (
+                                  <>
+                                    <UserMinus className="h-4 w-4" />
+                                    <span>{getFollowingButton()}</span>
+                                  </>
+                                )}
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => handleFollow(user._id)}
+                                disabled={followLoading[user._id]}
+                                className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white py-3 px-4 rounded-xl font-semibold transition-all duration-200 shadow-md hover:shadow-lg flex items-center justify-center space-x-2"
+                              >
+                                {followLoading[user._id] ? (
+                                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                ) : (
+                                  <>
+                                    <UserPlus className="h-4 w-4" />
+                                    <span>{getFollowButton()}</span>
+                                  </>
+                                )}
+                              </button>
+                            )}
+
+                            <div className="flex space-x-2">
+                              <button
+                                onClick={() => handleMessageUser(user._id)}
+                                className="flex-1 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white py-2 px-3 rounded-xl font-medium transition-all duration-200 shadow-md hover:shadow-lg flex items-center justify-center space-x-2 text-sm"
+                              >
+                                <MessageCircle className="h-3 w-3" />
+                                <span>{getMessageButton()}</span>
+                              </button>
+                              <button 
+                                onClick={() => navigate(`/profile/${user._id}`)}
+                                className="flex-1 border border-gray-300 hover:border-blue-400 hover:bg-blue-50 py-2 px-3 rounded-xl font-medium transition-all duration-200 flex items-center justify-center space-x-2 text-sm"
+                              >
+                                <ExternalLink className="h-3 w-3" />
+                                <span>{getProfileButton()}</span>
+                              </button>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -521,12 +698,18 @@ const FriendsPage = () => {
                     <Users className="h-12 w-12 text-gray-400" />
                   </div>
                   <h3 className="text-2xl font-bold text-gray-900 mb-3">
-                    No members found
+                    {getNoMembersFound()}
                   </h3>
                   <p className="text-gray-600 max-w-md mx-auto mb-6">
                     {searchQuery
-                      ? `No members found for "${searchQuery}". Try a different search term.`
-                      : "No members match your current filters. Try changing your filter settings."}
+                      ? getTranslation(
+                          `No members found for "${searchQuery}". Try a different search term.`,
+                          `"${searchQuery}" සඳහා සාමාජිකයින් හමු නොවීය. වෙනත් සෙවුම් පදයක් උත්සාහ කරන්න.`
+                        )
+                      : getTranslation(
+                          "No members match your current filters. Try changing your filter settings.",
+                          "ඔබගේ වත්මන් පෙරහන් වලට ගැලපෙන සාමාජිකයින් නොමැත. කරුණාකර ඔබගේ පෙරහන් සැකසුම් වෙනස් කරන්න."
+                        )}
                   </p>
                   <button
                     onClick={() => {
@@ -536,7 +719,7 @@ const FriendsPage = () => {
                     }}
                     className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-xl font-semibold transition-all duration-200 shadow-md hover:shadow-lg"
                   >
-                    Show All Members
+                    {getShowAllMembers()}
                   </button>
                 </div>
               )}

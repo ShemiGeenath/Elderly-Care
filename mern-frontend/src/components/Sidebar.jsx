@@ -11,11 +11,15 @@ import {
   FaCog,
   FaSignOutAlt
 } from "react-icons/fa";
+import { useLanguage } from '../context/LanguageContext';
+import useTranslation from '../hooks/useTranslation';
 
 const Sidebar = ({ user, onLogout }) => {
   const navigate = useNavigate();
   const { unreadCount, fetchChats } = useChat();
   const [activePath, setActivePath] = useState(window.location.pathname);
+  const { t } = useTranslation();
+  const { getTranslation } = useLanguage();
 
   // Fetch chats periodically to update unread count
   useEffect(() => {
@@ -34,33 +38,33 @@ const Sidebar = ({ user, onLogout }) => {
     setActivePath(window.location.pathname);
   }, [navigate]);
 
-  // In your Sidebar.jsx, update the menu items
-const menuItems = [
-  { icon: <FaHome />, label: "Home", link: "/liberta-home" },
-  {
-    icon: <FaUser />,
-    label: "Profile",
-    link: user?.id ? `/profile/${user.id}` : "/profile"
-  },
-  { icon: <FaUsers />, label: "Friends", link: "/FriendsPage" },
-  { 
-    icon: (
-      <div className="relative inline-block">
-        <FaComment className="text-2xl" />
-        {unreadCount > 0 && (
-          <span className="absolute -top-2 -right-2 min-w-[20px] h-5 bg-gradient-to-r from-red-500 to-pink-500 text-white text-xs font-bold rounded-full flex items-center justify-center px-1 shadow-lg animate-pulse">
-            {unreadCount > 99 ? '99+' : unreadCount}
-          </span>
-        )}
-      </div>
-    ), 
-    label: "Chat", 
-    link: "/chat",
-    badge: unreadCount > 0 ? unreadCount : null
-  },
-  { icon: <FaFirstAid />, label: "Help", link: "/HelpPage" },
-  { icon: <FaCog />, label: "Settings", link: "/settings" } // This should already be there
-];
+  // Updated menu items with translations
+  const menuItems = [
+    { icon: <FaHome />, label: t("home"), link: "/liberta-home" },
+    {
+      icon: <FaUser />,
+      label: t("profile"),
+      link: user?.id ? `/profile/${user.id}` : "/profile"
+    },
+    { icon: <FaUsers />, label: t("friends"), link: "/FriendsPage" },
+    { 
+      icon: (
+        <div className="relative inline-block">
+          <FaComment className="text-2xl" />
+          {unreadCount > 0 && (
+            <span className="absolute -top-2 -right-2 min-w-[20px] h-5 bg-gradient-to-r from-red-500 to-pink-500 text-white text-xs font-bold rounded-full flex items-center justify-center px-1 shadow-lg animate-pulse">
+              {unreadCount > 99 ? '99+' : unreadCount}
+            </span>
+          )}
+        </div>
+      ), 
+      label: t("chat"), 
+      link: "/chat",
+      badge: unreadCount > 0 ? unreadCount : null
+    },
+    { icon: <FaFirstAid />, label: t("help"), link: "/HelpPage" },
+    { icon: <FaCog />, label: t("settings"), link: "/settings" }
+  ];
 
   const isActive = (link) => {
     if (link === "/liberta-home" && activePath === "/liberta-home") return true;
@@ -100,7 +104,7 @@ const menuItems = [
               <span className="text-xs font-medium">{item.label}</span>
               
               {/* Extra indicator for chat with unread messages */}
-              {item.label === "Chat" && unreadCount > 0 && (
+              {item.label === t("chat") && unreadCount > 0 && (
                 <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-ping"></div>
               )}
             </button>
@@ -129,7 +133,7 @@ const menuItems = [
             className="flex flex-col items-center w-full px-3 py-4 text-gray-400 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all duration-200 group"
           >
             <FaSignOutAlt className="text-3xl mb-1 group-hover:scale-110 transition-transform" />
-            <span className="text-xs font-medium">Log Out</span>
+            <span className="text-xs font-medium">{t("logout")}</span>
           </button>
         </div>
       </div>

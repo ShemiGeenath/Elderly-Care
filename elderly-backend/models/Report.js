@@ -1,44 +1,62 @@
-// models/Report.js
+// Report.js
+
 const mongoose = require("mongoose");
 
-const ReportSchema = new mongoose.Schema(
-  {
-    reporter: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "ElderlyUser",
-      required: true
-    },
-    reportedItem: {
-      type: mongoose.Schema.Types.ObjectId,
-      required: true
-    },
-    reportedItemType: {
-      type: String,
-      enum: ['post', 'comment', 'user'],
-      required: true
-    },
-    reason: {
-      type: String,
-      required: true
-    },
-    description: String,
-    status: {
-      type: String,
-      enum: ['pending', 'reviewing', 'resolved', 'dismissed'],
-      default: 'pending'
-    },
-    assignedTo: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "AdminUser"
-    },
-    resolution: String,
-    resolvedBy: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "AdminUser"
-    },
-    resolvedAt: Date
+const ReportSchema = new mongoose.Schema({
+  reporter: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'ElderlyUser',
+    required: true
   },
-  { timestamps: true }
-);
+  targetType: {
+    type: String,
+    enum: ['post', 'user', 'comment'],
+    required: true
+  },
+  targetId: {
+    type: mongoose.Schema.Types.ObjectId,
+    required: true,
+    refPath: 'targetType'
+  },
+  reason: {
+    type: String,
+    required: true,
+    enum: ['spam', 'harassment', 'inappropriate', 'fake', 'other']
+  },
+  description: String,
+  status: {
+    type: String,
+    enum: ['pending', 'reviewing', 'resolved', 'dismissed'],
+    default: 'pending'
+  },
+  priority: {
+    type: String,
+    enum: ['low', 'medium', 'high', 'urgent'],
+    default: 'medium'
+  },
+  assignedTo: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Admin'
+  },
+  resolution: String,
+  resolvedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Admin'
+  },
+  resolvedAt: Date,
+  createdAt: {
+    type: Date,
+    default: Date.now
+  },
+  updatedAt: {
+    type: Date,
+    default: Date.now
+  }
+});
+
+ReportSchema.pre('save', function(next) {
+  this.updatedAt = Date.now();
+  next();
+});
 
 module.exports = mongoose.model("Report", ReportSchema);

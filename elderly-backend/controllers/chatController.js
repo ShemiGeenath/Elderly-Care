@@ -2,6 +2,7 @@
 const Chat = require('../models/Chat');
 const Message = require('../models/Message');
 const ElderlyUser = require('../models/ElderlyUser');
+const { cloudinary } = require('../config/cloudinary');
 
 // Get all chats for current user
 exports.getUserChats = async (req, res) => {
@@ -166,7 +167,7 @@ exports.getChatMessages = async (req, res) => {
   }
 };
 
-// Send a message
+// Send a text message
 exports.sendMessage = async (req, res) => {
   try {
     const { chatId } = req.params;
@@ -189,6 +190,7 @@ exports.sendMessage = async (req, res) => {
       chat: chatId,
       sender: userId,
       content,
+      messageType: 'text',
       deliveredTo: [userId]
     });
 
@@ -222,6 +224,95 @@ exports.sendMessage = async (req, res) => {
   }
 };
 
+// Send a message with media (image, video, voice, file)
+exports.sendMediaMessage = async (req, res) => {
+  try {
+    const { chatId } = req.params;
+    const { content, messageType, duration } = req.body;
+    const userId = req.user.id;
+
+    const chat = await Chat.findOne({
+      _id: chatId,
+      participants: userId
+    });
+
+    if (!chat) {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to send message in this chat'
+      });
+    }
+
+    let messageData = {
+      chat: chatId,
+      sender: userId,
+      content: content || '',
+      messageType: messageType || 'file',
+      deliveredTo: [userId]
+    };
+
+    // Handle file upload if present
+    if (req.file) {
+      messageData.mediaUrl = req.file.path;
+      messageData.mediaPublicId = req.file.filename;
+      
+      // Parse duration if it exists and is valid
+      let parsedDuration = undefined;
+      if (duration && duration !== 'undefined' && duration !== 'null') {
+        const numDuration = parseFloat(duration);
+        if (!isNaN(numDuration) && numDuration > 0) {
+          parsedDuration = numDuration;
+        }
+      }
+      
+      // Add to attachments array
+      messageData.attachments = [{
+        type: messageType,
+        url: req.file.path,
+        publicId: req.file.filename,
+        filename: req.file.originalname,
+        size: req.file.size,
+        duration: parsedDuration
+      }];
+
+      // If it's a voice message, set duration
+      if (messageType === 'voice' && parsedDuration) {
+        messageData.duration = parsedDuration;
+      }
+    }
+
+    const message = await Message.create(messageData);
+
+    const populatedMessage = await Message.findById(message._id)
+      .populate('sender', 'firstName lastName profilePhoto');
+
+    // Update chat's last message
+    chat.lastMessage = message._id;
+    chat.updatedAt = new Date();
+    
+    // Increment unread count for other participants
+    chat.participants.forEach(participantId => {
+      if (participantId.toString() !== userId) {
+        const currentCount = chat.unreadCount.get(participantId.toString()) || 0;
+        chat.unreadCount.set(participantId.toString(), currentCount + 1);
+      }
+    });
+    
+    await chat.save();
+
+    res.status(201).json({
+      success: true,
+      message: populatedMessage
+    });
+  } catch (err) {
+    console.error('Send media message error:', err);
+    res.status(500).json({
+      success: false,
+      message: 'Error sending message',
+      error: err.message
+    });
+  }
+};
 // Delete a message
 exports.deleteMessage = async (req, res) => {
   try {
@@ -286,6 +377,42 @@ exports.markAsDelivered = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error marking messages as delivered'
+    });
+  }
+};
+
+// Delete media from Cloudinary (optional - for cleanup)
+exports.deleteMedia = async (req, res) => {
+  try {
+    const { publicId } = req.params;
+    const userId = req.user.id;
+
+    // Verify the user owns this media
+    const message = await Message.findOne({
+      'attachments.publicId': publicId,
+      sender: userId
+    });
+
+    if (!message) {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to delete this media'
+      });
+    }
+
+    // Delete from Cloudinary
+    const result = await cloudinary.uploader.destroy(publicId);
+
+    res.json({
+      success: true,
+      message: 'Media deleted successfully',
+      result
+    });
+  } catch (err) {
+    console.error('Delete media error:', err);
+    res.status(500).json({
+      success: false,
+      message: 'Error deleting media'
     });
   }
 };

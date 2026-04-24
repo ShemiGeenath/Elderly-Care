@@ -1,4 +1,4 @@
-// config/cloudinary.js
+// backend/config/cloudinary.js (update existing file)
 const cloudinary = require('cloudinary').v2;
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const multer = require('multer');
@@ -37,9 +37,20 @@ const postMediaStorage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
     folder: 'eldercare/posts',
-    allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'mp4', 'mov'],
+    allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'mp4', 'mov', 'webm', 'mp3', 'wav', 'ogg'],
     resource_type: 'auto',
     public_id: (req, file) => `post-${req.user.id}-${Date.now()}`
+  }
+});
+
+// Configure storage for chat media
+const chatMediaStorage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'eldercare/chat',
+    allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'mp4', 'mov', 'webm', 'mp3', 'wav', 'ogg'],
+    resource_type: 'auto',
+    public_id: (req, file) => `chat-${req.user.id}-${Date.now()}`
   }
 });
 
@@ -47,10 +58,15 @@ const postMediaStorage = new CloudinaryStorage({
 const uploadProfilePhoto = multer({ storage: profilePhotoStorage });
 const uploadCoverPhoto = multer({ storage: coverPhotoStorage });
 const uploadPostMedia = multer({ storage: postMediaStorage });
+const uploadChatMedia = multer({ 
+  storage: chatMediaStorage,
+  limits: { fileSize: 50 * 1024 * 1024 } // 50MB limit for voice/video
+});
 
 module.exports = {
   cloudinary,
   uploadProfilePhoto,
   uploadCoverPhoto,
-  uploadPostMedia
+  uploadPostMedia,
+  uploadChatMedia
 };

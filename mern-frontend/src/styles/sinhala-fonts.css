@@ -1,0 +1,23 @@
+/* frontend/src/styles/sinhala-fonts.css */
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Sinhala:wght@300;400;500;600;700&display=swap');
+
+.sinhala-text {
+  font-family: 'Noto Sans Sinhala', sans-serif;
+  line-height: 1.6;
+}
+
+/* For better readability in Sinhala */
+html[lang="si"] {
+  font-family: 'Noto Sans Sinhala', sans-serif;
+}
+
+html[lang="si"] p,
+html[lang="si"] span,
+html[lang="si"] div:not(.no-sinhala-font) {
+  font-family: 'Noto Sans Sinhala', sans-serif;
+}
+
+/* Adjust line height for Sinhala text */
+html[lang="si"] .message-content {
+  line-height: 1.8;
+}

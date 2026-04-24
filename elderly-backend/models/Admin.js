@@ -1,4 +1,3 @@
-// models/Admin.js - COMPLETE FIX
 const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
 
@@ -6,13 +5,15 @@ const AdminSchema = new mongoose.Schema({
   username: { 
     type: String, 
     required: true, 
-    unique: true 
+    unique: true,
+    trim: true
   },
   email: { 
     type: String, 
     required: true, 
     unique: true,
-    lowercase: true 
+    lowercase: true,
+    trim: true
   },
   password: { 
     type: String, 
@@ -29,20 +30,24 @@ const AdminSchema = new mongoose.Schema({
   },
   profileImage: {
     type: String,
-    default: 'https://via.placeholder.com/150'
+    default: 'https://res.cloudinary.com/dfr4ompqk/image/upload/v1/eldercare/defaults/default-avatar.png'
   },
   permissions: [{
-    module: String,
-    canView: Boolean,
-    canCreate: Boolean,
-    canEdit: Boolean,
-    canDelete: Boolean
+    module: {
+      type: String,
+      enum: ['users', 'posts', 'reports', 'analytics', 'settings', 'chats', 'sos']
+    },
+    canView: { type: Boolean, default: false },
+    canCreate: { type: Boolean, default: false },
+    canEdit: { type: Boolean, default: false },
+    canDelete: { type: Boolean, default: false }
   }],
   isActive: { 
     type: Boolean, 
     default: true 
   },
   lastLogin: Date,
+  lastActive: Date,
   createdAt: { 
     type: Date, 
     default: Date.now 
@@ -53,16 +58,19 @@ const AdminSchema = new mongoose.Schema({
   }
 });
 
-// Hash password before saving - FIXED VERSION with proper function signature
+// Update timestamp on save
 AdminSchema.pre('save', function(next) {
-  // Only hash if password is modified
-  if (!this.isModified('password')) {
-    return next();
-  }
+  this.updatedAt = Date.now();
+  next();
+});
+
+// Hash password before saving
+AdminSchema.pre('save', async function(next) {
+  if (!this.isModified('password')) return next();
   
   try {
-    const salt = bcrypt.genSaltSync(10);
-    this.password = bcrypt.hashSync(this.password, salt);
+    const salt = await bcrypt.genSalt(10);
+    this.password = await bcrypt.hash(this.password, salt);
     next();
   } catch (error) {
     next(error);

@@ -31,7 +31,7 @@ db = client['eldercare']
 users_collection = db['elderlyusers']
 
 # Load pre-trained sentence transformer model for better semantic understanding
-# This model understands context better than traditional NLP
+# This model understands context better than traditional NLP and Get Help form AI
 model = SentenceTransformer('all-MiniLM-L6-v2')
 
 class NLPFriendMatcher:

@@ -2,11 +2,15 @@
 import React, { useState, useEffect } from 'react';
 import { MessageCircle, X, Maximize2, Minimize2, Heart } from 'lucide-react';
 import ElderlyCareChatbot from '../Pages/ElderlyCareChatbot';
+import { useLanguage } from '../context/LanguageContext';
+import useTranslation from '../hooks/useTranslation';
 
 const FloatingChatbot = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isBlinking, setIsBlinking] = useState(true);
   const [isFullScreen, setIsFullScreen] = useState(false);
+  const { getTranslation } = useLanguage();
+  const { t } = useTranslation();
 
   // Stop blinking after first interaction or after 30 seconds
   useEffect(() => {
@@ -32,13 +36,13 @@ const FloatingChatbot = () => {
       <button
         onClick={toggleChat}
         className={`
-          fixed bottom-6 right-6 z-50 
+          fixed bottom-30 right-6 z-50 
           bg-gradient-to-r from-teal-600 to-blue-700 text-white rounded-full p-4 
           shadow-lg hover:from-teal-700 hover:to-blue-800 transition-all duration-300
           ${isBlinking ? 'animate-pulse ring-4 ring-teal-300' : ''}
           transform hover:scale-110
         `}
-        aria-label="Open chat"
+        aria-label={t("open_chat") || "Open chat"}
       >
         <MessageCircle size={28} />
       </button>
@@ -61,20 +65,22 @@ const FloatingChatbot = () => {
               <div className="bg-white p-1.5 rounded-full">
                 <Heart className="w-5 h-5 text-red-500" />
               </div>
-              <h3 className="font-semibold text-lg">සුව සෙවණ - Gentle Care</h3>
+              <h3 className="font-semibold text-lg">
+                {getTranslation("සුව සෙවණ - Gentle Care", "සුව සෙවණ - මෘදු සත්කාර")}
+              </h3>
             </div>
             <div className="flex items-center space-x-2">
               <button 
                 onClick={toggleFullScreen}
                 className="hover:bg-teal-600 rounded-full p-1.5 transition-colors"
-                title={isFullScreen ? "Minimize" : "Maximize"}
+                title={isFullScreen ? (t("minimize") || "Minimize") : (t("maximize") || "Maximize")}
               >
                 {isFullScreen ? <Minimize2 size={20} /> : <Maximize2 size={20} />}
               </button>
               <button 
                 onClick={toggleChat}
                 className="hover:bg-teal-600 rounded-full p-1.5 transition-colors"
-                title="Close"
+                title={t("close") || "Close"}
               >
                 <X size={20} />
               </button>

@@ -1,5 +1,4 @@
-// axiosConfig.js
-
+// src/api/axiosConfig.js
 import axios from 'axios';
 
 const axiosInstance = axios.create({
@@ -12,7 +11,7 @@ const axiosInstance = axios.create({
 // Request interceptor to add token
 axiosInstance.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('elderlyToken'); // Changed from 'token'
+    const token = localStorage.getItem('elderlyToken');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -30,7 +29,7 @@ axiosInstance.interceptors.response.use(
     if (error.response?.status === 401) {
       localStorage.removeItem('elderlyToken');
       localStorage.removeItem('elderlyUser');
-      window.location.href = '/login'; // Make sure this matches your route
+      window.location.href = '/login';
     }
     return Promise.reject(error);
   }

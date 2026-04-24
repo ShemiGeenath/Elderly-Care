@@ -22,6 +22,7 @@ const ElderlyUserSchema = new mongoose.Schema(
     zipCode: String,
     emergencyContact: String,
     emergencyPhone: String,
+    emergencyEmail: String,
     hobbies: [String],
     helpNeeded: [String],
     mobility: { type: String, default: "independent" },
@@ -33,11 +34,43 @@ const ElderlyUserSchema = new mongoose.Schema(
       type: String, 
       default: 'https://res.cloudinary.com/your-cloud-name/image/upload/v1/eldercare/defaults/default-cover.jpg'
     },
+    // AI Help
+googleId: { 
+  type: String, 
+  unique: true,
+  sparse: true  
+},
+isVerified: { 
+  type: Boolean, 
+  default: false 
+},
+bio: { type: String, default: "" },
     acceptTerms: { type: Boolean, required: true, default: false },
-    acceptPrivacy: { type: Boolean, default: false }
+    isActive: { type: Boolean, default: true },
+    acceptPrivacy: { type: Boolean, default: false },
+    
+    // New fields for follow system
+    followers: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "ElderlyUser"
+    }],
+    following: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "ElderlyUser"
+    }]
   },
   { timestamps: true }
 );
+
+// Virtual for followers count
+ElderlyUserSchema.virtual('followersCount').get(function() {
+  return this.followers.length;
+});
+
+// Virtual for following count
+ElderlyUserSchema.virtual('followingCount').get(function() {
+  return this.following.length;
+});
 
 // Hash password middleware
 ElderlyUserSchema.pre('save', async function () {
@@ -50,5 +83,6 @@ ElderlyUserSchema.pre('save', async function () {
 ElderlyUserSchema.methods.comparePassword = async function(candidatePassword) {
   return bcrypt.compare(candidatePassword, this.password);
 };
+
 
 module.exports = mongoose.model("ElderlyUser", ElderlyUserSchema);

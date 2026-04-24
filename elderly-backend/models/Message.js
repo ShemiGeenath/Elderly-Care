@@ -14,16 +14,32 @@ const MessageSchema = new mongoose.Schema({
   },
   content: {
     type: String,
-    required: true
+    default: ''
+  },
+  messageType: {
+    type: String,
+    enum: ['text', 'image', 'video', 'voice', 'file'],
+    default: 'text'
+  },
+  mediaUrl: {
+    type: String
+  },
+  mediaPublicId: {
+    type: String // For Cloudinary
+  },
+  duration: {
+    type: Number // For voice messages (in seconds)
   },
   attachments: [{
     type: {
       type: String,
-      enum: ['image', 'file']
+      enum: ['image', 'video', 'file', 'voice']
     },
     url: String,
+    publicId: String,
     filename: String,
-    size: Number
+    size: Number,
+    duration: Number // For voice/video
   }],
   readBy: [{
     user: {
@@ -46,11 +62,9 @@ const MessageSchema = new mongoose.Schema({
   deletedFor: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'ElderlyUser'
-  }],
-  createdAt: {
-    type: Date,
-    default: Date.now
-  }
+  }]
+}, {
+  timestamps: true
 });
 
 module.exports = mongoose.model('Message', MessageSchema);
