@@ -84,7 +84,7 @@ const AdminDashboard = () => {
     tags: []
   });
 
-  const API_BASE_URL = 'http://localhost:5000/api';
+ const API_BASE_URL = 'https://elderly-care-3ibt.onrender.com/api';
 
   // Fetch all data - Modified to skip test endpoint
   const fetchAllData = async () => {
